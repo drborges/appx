@@ -8,15 +8,6 @@ import (
 	"testing"
 )
 
-type Entity struct {
-	appx.Model
-	keySpec *appx.KeySpec
-}
-
-func (entity Entity) KeySpec() *appx.KeySpec {
-	return entity.keySpec
-}
-
 func TestKeyResolver(t *testing.T) {
 	context, _ := aetest.NewContext(nil)
 	defer context.Close()

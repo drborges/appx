@@ -28,3 +28,9 @@ type Cacheable interface {
 type Queryable interface {
 	Query() *datastore.Query
 }
+
+type CachedEntity struct {
+	Key       *datastore.Key
+	ParentKey *datastore.Key
+	Entity    Entity
+}
