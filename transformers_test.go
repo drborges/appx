@@ -2,33 +2,33 @@ package appx_test
 
 import (
 	"appengine/aetest"
+	"appengine/datastore"
 	"appengine/memcache"
 	"github.com/drborges/appxv2"
 	"github.com/drborges/riversv2"
 	"github.com/drborges/riversv2/rx"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
-	"appengine/datastore"
 )
 
 func TestResolveEntityKey(t *testing.T) {
 	gaeCtx, _ := aetest.NewContext(nil)
 	defer gaeCtx.Close()
 
-	var validEntity1 = &Entity{
+	validEntity1 := &Entity{
 		keySpec: &appx.KeySpec{
 			Kind:  "Entity",
 			IntID: 123,
 		},
 	}
 
-	var invalidEntity = &Entity{
+	invalidEntity := &Entity{
 		keySpec: &appx.KeySpec{
 			Kind: "Entity",
 		},
 	}
 
-	var validEntity2 = &Entity{
+	validEntity2 := &Entity{
 		keySpec: &appx.KeySpec{
 			Kind:  "Entity",
 			IntID: 321,
@@ -93,12 +93,12 @@ func TestLoadEntityFromCache(t *testing.T) {
 	gaeCtx, _ := aetest.NewContext(nil)
 	defer gaeCtx.Close()
 
-	var cachedUser = &User{
+	cachedUser := &User{
 		Name:  "Borges",
 		Email: "drborges.cic@gmail.com",
 		keySpec: &appx.KeySpec{
-			Kind:     "Users",
-			StringID: "borges",
+			Kind:      "Users",
+			StringID:  "borges",
 			HasParent: true,
 		},
 	}
@@ -124,21 +124,19 @@ func TestLoadEntityFromCache(t *testing.T) {
 			})
 
 			Convey("When I transform the inbound entity stream", func() {
-				var userFromCache = &User{
+				userFromCache := &User{
 					keySpec: &appx.KeySpec{
 						StringID: "borges",
 					},
 				}
 
-				var userNotCached = &User{
+				userNotCached := &User{
 					keySpec: &appx.KeySpec{
 						StringID: "not cached",
 					},
 				}
 
-				var notCacheable = &Entity{
-					keySpec: &appx.KeySpec{},
-				}
+				notCacheable := &Entity{}
 
 				in, out := rx.NewStream(3)
 				out <- userFromCache
@@ -160,6 +158,105 @@ func TestLoadEntityFromCache(t *testing.T) {
 						So(userFromCache.Email, ShouldEqual, cachedUser.Email)
 						So(userFromCache.Key(), ShouldResemble, cachedUser.Key())
 						So(userFromCache.ParentKey(), ShouldResemble, cachedUser.ParentKey())
+					})
+				})
+			})
+		})
+	})
+}
+
+func TestLookupEntityFromDatastore(t *testing.T) {
+	gaeCtx, _ := aetest.NewContext(nil)
+	defer gaeCtx.Close()
+
+	user := &User{
+		Name:  "Borges",
+		Email: "drborges.cic@gmail.com",
+		keySpec: &appx.KeySpec{
+			Kind:      "Users",
+			StringID:  "borges",
+			HasParent: true,
+		},
+	}
+
+	parentKey := datastore.NewKey(gaeCtx, "Parent", "parent id", 0, nil)
+	user.SetParentKey(parentKey)
+
+	Convey("Given I have a lookup entity from datastore transformer", t, func() {
+		riversCtx := rivers.NewContext()
+		lookup := appx.NewTransformer(riversCtx).LookupEntityFromDatastore(gaeCtx)
+
+		Convey("When I transform the inbound stream with non existent entities", func() {
+			nonExistentUser := &User{
+				keySpec: &appx.KeySpec{
+					Kind:     "Users",
+					StringID: "borges",
+				},
+			}
+			appx.NewKeyResolver(gaeCtx).Resolve(nonExistentUser)
+			userMissingKey := &User{}
+
+			in, out := rx.NewStream(2)
+			out <- nonExistentUser
+			out <- userMissingKey
+			close(out)
+
+			stream := lookup.Transform(in)
+
+			Convey("Then no entities are sent downstream ", func() {
+				So(stream.Read(), ShouldBeEmpty)
+
+				Convey("And context is closed with error", func() {
+					_, opened := <-riversCtx.Closed()
+					So(opened, ShouldBeFalse)
+					So(riversCtx.Err(), ShouldEqual, datastore.ErrNoSuchEntity)
+				})
+			})
+		})
+
+		Convey("And I have an entity in datastore", func() {
+			err := appx.NewKeyResolver(gaeCtx).Resolve(user)
+			So(err, ShouldBeNil)
+
+			_, err = datastore.Put(gaeCtx, user.Key(), user)
+			So(err, ShouldBeNil)
+
+			Convey("When I transform the inbound entity stream", func() {
+				userFromDatastore := &User{
+					keySpec: &appx.KeySpec{
+						Kind:      "Users",
+						StringID:  "borges",
+						HasParent: true,
+					},
+				}
+
+				userFromDatastore.SetParentKey(parentKey)
+				appx.NewKeyResolver(gaeCtx).Resolve(userFromDatastore)
+
+				userMissingKey := &User{}
+				userWithIncompleteKey := &User{}
+				userWithIncompleteKey.SetKey(datastore.NewIncompleteKey(gaeCtx, "Users", nil))
+
+				in, out := rx.NewStream(3)
+				out <- userFromDatastore
+				out <- userMissingKey
+				out <- userWithIncompleteKey
+				close(out)
+
+				stream := lookup.Transform(in)
+
+				Convey("Then non existent entities are sent downstream", func() {
+					So(<-stream, ShouldResemble, userMissingKey)
+					So(<-stream, ShouldResemble, userWithIncompleteKey)
+
+					_, opened := <-stream
+					So(opened, ShouldBeFalse)
+
+					Convey("And all existent entities are loaded", func() {
+						So(userFromDatastore.Name, ShouldEqual, user.Name)
+						So(userFromDatastore.Email, ShouldEqual, user.Email)
+						So(userFromDatastore.Key(), ShouldResemble, user.Key())
+						So(userFromDatastore.ParentKey(), ShouldResemble, user.ParentKey())
 					})
 				})
 			})
