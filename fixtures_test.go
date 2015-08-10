@@ -1,6 +1,9 @@
 package appx_test
 
-import "github.com/drborges/appxv2"
+import (
+	"github.com/drborges/appxv2"
+	"appengine/datastore"
+)
 
 type Entity struct {
 	appx.Model
@@ -24,4 +27,8 @@ func (user *User) KeySpec() *appx.KeySpec {
 
 func (user *User) CacheID() string {
 	return user.keySpec.StringID
+}
+
+func (user *User) Query() *datastore.Query {
+	return datastore.NewQuery(user.keySpec.Kind).Filter("Email=", user.Email).Limit(1)
 }
