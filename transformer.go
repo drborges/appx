@@ -1,13 +1,11 @@
 package appx
 
 import (
-	"appengine"
 	"github.com/drborges/riversv2/rx"
 )
 
 type transformer struct {
-	riversCtx rx.Context
-	gaeCtx    appengine.Context
+	context rx.Context
 	transform func(Entity) bool
 }
 
@@ -15,12 +13,12 @@ func (transformer *transformer) Transform(in rx.InStream) rx.InStream {
 	reader, writer := rx.NewStream(cap(in))
 
 	go func() {
-		defer transformer.riversCtx.Recover()
+		defer transformer.context.Recover()
 		defer close(writer)
 
 		for {
 			select {
-			case <-transformer.riversCtx.Closed():
+			case <-transformer.context.Closed():
 				return
 			default:
 				data, more := <-in

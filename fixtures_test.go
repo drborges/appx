@@ -21,6 +21,30 @@ type User struct {
 	keySpec *appx.KeySpec
 }
 
+func NewUserWithParent(user User) *User {
+	return &User{
+		Name: user.Name,
+		Email: user.Email,
+		keySpec: &appx.KeySpec{
+			Kind: "Users",
+			StringID: user.Name,
+			HasParent: true,
+		},
+	}
+}
+
+func NewUser(user User) *User {
+	return &User{
+		Name: user.Name,
+		Email: user.Email,
+		keySpec: &appx.KeySpec{
+			Kind: "Users",
+			StringID: user.Name,
+			HasParent: false,
+		},
+	}
+}
+
 func (user *User) KeySpec() *appx.KeySpec {
 	return user.keySpec
 }

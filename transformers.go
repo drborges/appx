@@ -17,8 +17,7 @@ func NewTransformer(context rx.Context) *transformersBuilder {
 
 func (builder *transformersBuilder) ResolveEntityKey(context appengine.Context) *transformer {
 	return &transformer{
-		riversCtx: builder.context,
-		gaeCtx:    context,
+		context: builder.context,
 		transform: func(e Entity) bool {
 			NewKeyResolver(context).Resolve(e)
 			return true
@@ -28,8 +27,7 @@ func (builder *transformersBuilder) ResolveEntityKey(context appengine.Context) 
 
 func (builder *transformersBuilder) LoadEntityFromCache(context appengine.Context) *transformer {
 	return &transformer{
-		riversCtx: builder.context,
-		gaeCtx:    context,
+		context: builder.context,
 		transform: func(e Entity) bool {
 			if cacheable, ok := e.(Cacheable); ok {
 				cachedEntity := CachedEntity{
@@ -55,8 +53,7 @@ func (builder *transformersBuilder) LoadEntityFromCache(context appengine.Contex
 
 func (builder *transformersBuilder) LookupEntityFromDatastore(context appengine.Context) *transformer {
 	return &transformer{
-		riversCtx: builder.context,
-		gaeCtx:    context,
+		context: builder.context,
 		transform: func(e Entity) bool {
 			// Send entity to the next downstream transformer in
 			// case it is not possible to look it up from datastore
@@ -64,6 +61,9 @@ func (builder *transformersBuilder) LookupEntityFromDatastore(context appengine.
 				return true
 			}
 
+			// TODO Consider not panicing on this situation
+			// In case the entity gets to this point with a key and still cannot
+			// be lookuped up, should we move forward downstream?
 			if err := datastore.Get(context, e.Key(), e); err != nil {
 				panic(err)
 			}
@@ -75,8 +75,7 @@ func (builder *transformersBuilder) LookupEntityFromDatastore(context appengine.
 
 func (builder *transformersBuilder) QueryEntityFromDatastore(context appengine.Context) *transformer {
 	return &transformer{
-		riversCtx: builder.context,
-		gaeCtx:    context,
+		context: builder.context,
 		transform: func(e Entity) bool {
 			// Send entity to the next downstream transformer in
 			// case it is not possible to look it up from datastore

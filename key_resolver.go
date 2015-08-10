@@ -20,14 +20,13 @@ func (resolver *KeyResolver) Resolve(e Entity) error {
 		return err
 	}
 
-	key := datastore.NewKey(
+	e.SetKey(datastore.NewKey(
 		resolver.context,
 		spec.Kind,
 		spec.StringID,
 		spec.IntID,
-		e.ParentKey())
+		e.ParentKey()))
 
-	e.SetKey(key)
 	return nil
 }
 

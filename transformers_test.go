@@ -16,23 +16,23 @@ func TestResolveEntityKey(t *testing.T) {
 	gaeCtx, _ := aetest.NewContext(nil)
 	defer gaeCtx.Close()
 
-	validEntity1 := &Entity{
+	entityWithIntID := &Entity{
 		keySpec: &appx.KeySpec{
 			Kind:  "Entity",
 			IntID: 123,
 		},
 	}
 
-	invalidEntity := &Entity{
+	entityWithIncompleteKey := &Entity{
 		keySpec: &appx.KeySpec{
 			Kind: "Entity",
 		},
 	}
 
-	validEntity2 := &Entity{
+	entityWithStringID := &Entity{
 		keySpec: &appx.KeySpec{
-			Kind:  "Entity",
-			IntID: 321,
+			Kind:     "Entity",
+			StringID: "321",
 		},
 	}
 
@@ -41,46 +41,25 @@ func TestResolveEntityKey(t *testing.T) {
 		resolver := appx.NewTransformer(riversCtx).ResolveEntityKey(gaeCtx)
 
 		Convey("When I transform entities with valid key spec from the inbound stream", func() {
-			in, out := rx.NewStream(2)
-			out <- validEntity1
-			out <- validEntity2
-			close(out)
-
-			stream := resolver.Transform(in)
-
-			Convey("Then all entities are transformed", func() {
-				So(stream.Read(), ShouldResemble, []rx.T{
-					validEntity1,
-					validEntity2,
-				})
-
-				Convey("And entities have their keys resolved", func() {
-					So(validEntity1.Key(), ShouldNotBeNil)
-					So(validEntity2.Key(), ShouldNotBeNil)
-				})
-			})
-		})
-
-		Convey("When I transform entities with valid and invalid key spec from the inbound stream", func() {
 			in, out := rx.NewStream(3)
-			out <- validEntity1
-			out <- invalidEntity
-			out <- validEntity2
+			out <- entityWithIntID
+			out <- entityWithIncompleteKey
+			out <- entityWithStringID
 			close(out)
 
 			stream := resolver.Transform(in)
 
 			Convey("Then all entities are sent downstream", func() {
 				So(stream.Read(), ShouldResemble, []rx.T{
-					validEntity1,
-					invalidEntity,
-					validEntity2,
+					entityWithIntID,
+					entityWithIncompleteKey,
+					entityWithStringID,
 				})
 
-				Convey("And valid entities have their keys resolved", func() {
-					So(validEntity1.Key(), ShouldNotBeNil)
-					So(invalidEntity.Key(), ShouldBeNil)
-					So(validEntity2.Key(), ShouldNotBeNil)
+				Convey("And entities with complete key specs have their keys resolved", func() {
+					So(entityWithIntID.Key(), ShouldNotBeNil)
+					So(entityWithStringID.Key(), ShouldNotBeNil)
+					So(entityWithIncompleteKey.Key(), ShouldBeNil)
 				})
 			})
 		})
@@ -91,25 +70,19 @@ func TestLoadEntityFromCache(t *testing.T) {
 	gaeCtx, _ := aetest.NewContext(nil)
 	defer gaeCtx.Close()
 
-	cachedUser := &User{
+	cachedUser := NewUserWithParent(User{
 		Name:  "Borges",
 		Email: "drborges.cic@gmail.com",
-		keySpec: &appx.KeySpec{
-			Kind:      "Users",
-			StringID:  "borges",
-			HasParent: true,
-		},
-	}
+	})
 
 	cachedUser.SetParentKey(datastore.NewKey(gaeCtx, "Parent", "parent id", 0, nil))
+	appx.NewKeyResolver(gaeCtx).Resolve(cachedUser)
 
-	Convey("Given I have a load entity entity from cache transformer", t, func() {
+	Convey("Given I have a load entity from cache transformer", t, func() {
 		riversCtx := rivers.NewContext()
 		loader := appx.NewTransformer(riversCtx).LoadEntityFromCache(gaeCtx)
 
 		Convey("And I have a cached entity", func() {
-			appx.NewKeyResolver(gaeCtx).Resolve(cachedUser)
-
 			cached := appx.CachedEntity{
 				Entity:    cachedUser,
 				Key:       cachedUser.Key(),
@@ -122,16 +95,11 @@ func TestLoadEntityFromCache(t *testing.T) {
 			})
 
 			Convey("When I transform the inbound entity stream", func() {
-				userFromCache := &User{
-					Email: cachedUser.Email,
-					keySpec: &appx.KeySpec{},
-				}
-
-				userNotCached := &User{
-					keySpec: &appx.KeySpec{},
-				}
-
 				notCacheable := &Entity{}
+				userNotCached := NewUser(User{})
+				userFromCache := NewUser(User{
+					Email: cachedUser.Email,
+				})
 
 				in, out := rx.NewStream(3)
 				out <- userFromCache
@@ -164,15 +132,10 @@ func TestLookupEntityFromDatastore(t *testing.T) {
 	gaeCtx, _ := aetest.NewContext(nil)
 	defer gaeCtx.Close()
 
-	user := &User{
+	user := NewUserWithParent(User{
 		Name:  "Borges",
 		Email: "drborges.cic@gmail.com",
-		keySpec: &appx.KeySpec{
-			Kind:      "Users",
-			StringID:  "borges",
-			HasParent: true,
-		},
-	}
+	})
 
 	parentKey := datastore.NewKey(gaeCtx, "Parent", "parent id", 0, nil)
 	user.SetParentKey(parentKey)
@@ -182,14 +145,9 @@ func TestLookupEntityFromDatastore(t *testing.T) {
 		lookup := appx.NewTransformer(riversCtx).LookupEntityFromDatastore(gaeCtx)
 
 		Convey("When I transform the inbound stream with non existent entities", func() {
-			nonExistentUser := &User{
-				keySpec: &appx.KeySpec{
-					Kind:     "Users",
-					StringID: "borges",
-				},
-			}
-			appx.NewKeyResolver(gaeCtx).Resolve(nonExistentUser)
 			userMissingKey := &User{}
+			nonExistentUser := NewUser(User{Name: "Borges"})
+			appx.NewKeyResolver(gaeCtx).Resolve(nonExistentUser)
 
 			in, out := rx.NewStream(2)
 			out <- nonExistentUser
@@ -217,19 +175,12 @@ func TestLookupEntityFromDatastore(t *testing.T) {
 			So(err, ShouldBeNil)
 
 			Convey("When I transform the inbound entity stream", func() {
-				userFromDatastore := &User{
-					keySpec: &appx.KeySpec{
-						Kind:      "Users",
-						StringID:  "borges",
-						HasParent: true,
-					},
-				}
-
+				userFromDatastore := NewUserWithParent(User{Name: "Borges"})
 				userFromDatastore.SetParentKey(parentKey)
 				appx.NewKeyResolver(gaeCtx).Resolve(userFromDatastore)
 
-				userMissingKey := &User{}
-				userWithIncompleteKey := &User{}
+				userMissingKey := NewUser(User{})
+				userWithIncompleteKey := NewUser(User{})
 				userWithIncompleteKey.SetKey(datastore.NewIncompleteKey(gaeCtx, "Users", nil))
 
 				in, out := rx.NewStream(3)

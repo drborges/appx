@@ -12,17 +12,14 @@ func TestDatastoreLoad(t *testing.T) {
 	context, _ := aetest.NewContext(nil)
 	defer context.Close()
 
-	user := &User{
+	user := NewUser(User{
 		Name:  "Borges",
 		Email: "drborges.cic@gmail.com",
-		keySpec: &appx.KeySpec{
-			Kind:      "Users",
-			StringID:  "borges",
-		},
-	}
+	})
+
+	appx.NewKeyResolver(context).Resolve(user)
 
 	Convey("Given I have a cached entity", t, func() {
-		appx.NewKeyResolver(context).Resolve(user)
 
 		cached := appx.CachedEntity{
 			Entity:    user,
@@ -36,10 +33,9 @@ func TestDatastoreLoad(t *testing.T) {
 		})
 
 		Convey("When I load it with appx datastore", func() {
-			userFromCache := &User{
-				Email: "drborges.cic@gmail.com",
-				keySpec: &appx.KeySpec{},
-			}
+			userFromCache := NewUser(User{
+				Email:   "drborges.cic@gmail.com",
+			})
 
 			err := appx.NewDatastore(context).Load(userFromCache)
 
