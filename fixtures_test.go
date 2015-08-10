@@ -26,7 +26,7 @@ func (user *User) KeySpec() *appx.KeySpec {
 }
 
 func (user *User) CacheID() string {
-	return user.keySpec.StringID
+	return user.Email
 }
 
 func (user *User) Query() *datastore.Query {

@@ -123,15 +123,12 @@ func TestLoadEntityFromCache(t *testing.T) {
 
 			Convey("When I transform the inbound entity stream", func() {
 				userFromCache := &User{
-					keySpec: &appx.KeySpec{
-						StringID: "borges",
-					},
+					Email: cachedUser.Email,
+					keySpec: &appx.KeySpec{},
 				}
 
 				userNotCached := &User{
-					keySpec: &appx.KeySpec{
-						StringID: "not cached",
-					},
+					keySpec: &appx.KeySpec{},
 				}
 
 				notCacheable := &Entity{}
