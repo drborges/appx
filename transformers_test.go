@@ -70,20 +70,17 @@ func TestResolveEntityKey(t *testing.T) {
 
 			stream := resolver.Transform(in)
 
-			Convey("Then only entities up until the invalid entity are transformed", func() {
+			Convey("Then all entities are sent downstream", func() {
 				So(stream.Read(), ShouldResemble, []rx.T{
 					validEntity1,
+					invalidEntity,
+					validEntity2,
 				})
 
-				Convey("And entities have their keys resolved", func() {
+				Convey("And valid entities have their keys resolved", func() {
 					So(validEntity1.Key(), ShouldNotBeNil)
 					So(invalidEntity.Key(), ShouldBeNil)
 					So(validEntity2.Key(), ShouldNotBeNil)
-
-					Convey("And rivers context is closed", func() {
-						_, opened := <-riversCtx.Closed()
-						So(opened, ShouldBeFalse)
-					})
 				})
 			})
 		})

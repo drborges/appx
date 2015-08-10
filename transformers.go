@@ -20,10 +20,7 @@ func (builder *transformersBuilder) ResolveEntityKey(context appengine.Context) 
 		riversCtx: builder.context,
 		gaeCtx:    context,
 		transform: func(e Entity) bool {
-			if err := NewKeyResolver(context).Resolve(e); err != nil {
-				panic(err)
-			}
-
+			NewKeyResolver(context).Resolve(e)
 			return true
 		},
 	}
