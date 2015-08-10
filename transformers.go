@@ -2,9 +2,9 @@ package appx
 
 import (
 	"appengine"
-	"github.com/drborges/riversv2/rx"
-	"appengine/memcache"
 	"appengine/datastore"
+	"appengine/memcache"
+	"github.com/drborges/riversv2/rx"
 )
 
 type transformersBuilder struct {
@@ -35,7 +35,7 @@ func (builder *transformersBuilder) LoadEntityFromCache(context appengine.Contex
 		gaeCtx:    context,
 		transform: func(e Entity) bool {
 			if cacheable, ok := e.(Cacheable); ok {
-				cachedEntity := CachedEntity {
+				cachedEntity := CachedEntity{
 					Entity: e,
 				}
 				_, err := memcache.JSON.Get(context, cacheable.CacheID(), &cachedEntity)
@@ -48,7 +48,6 @@ func (builder *transformersBuilder) LoadEntityFromCache(context appengine.Contex
 				}
 
 				e.SetKey(cachedEntity.Key)
-				e.SetParentKey(cachedEntity.ParentKey)
 				return false
 			}
 
@@ -77,3 +76,25 @@ func (builder *transformersBuilder) LookupEntityFromDatastore(context appengine.
 	}
 }
 
+func (builder *transformersBuilder) QueryEntityFromDatastore(context appengine.Context) *transformer {
+	return &transformer{
+		riversCtx: builder.context,
+		gaeCtx:    context,
+		transform: func(e Entity) bool {
+			// Send entity to the next downstream transformer in
+			// case it is not possible to look it up from datastore
+
+			if queryable, ok := e.(Queryable); ok {
+				key, err := queryable.Query().Run(context).Next(e)
+				if err != nil {
+					panic(err)
+				}
+
+				e.SetKey(key)
+				return false
+			}
+
+			return true
+		},
+	}
+}
