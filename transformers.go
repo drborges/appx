@@ -4,6 +4,7 @@ import (
 	"appengine"
 	"github.com/drborges/riversv2/rx"
 	"appengine/memcache"
+	"appengine/datastore"
 )
 
 type transformersBuilder struct {
@@ -14,12 +15,12 @@ func NewTransformer(context rx.Context) *transformersBuilder {
 	return &transformersBuilder{context}
 }
 
-func (builder *transformersBuilder) ResolveEntityKey(gaeCtx appengine.Context) *transformer {
+func (builder *transformersBuilder) ResolveEntityKey(context appengine.Context) *transformer {
 	return &transformer{
 		riversCtx: builder.context,
-		gaeCtx:    gaeCtx,
+		gaeCtx:    context,
 		transform: func(e Entity) bool {
-			if err := NewKeyResolver(gaeCtx).Resolve(e); err != nil {
+			if err := NewKeyResolver(context).Resolve(e); err != nil {
 				panic(err)
 			}
 
@@ -52,6 +53,26 @@ func (builder *transformersBuilder) LoadEntityFromCache(context appengine.Contex
 			}
 
 			return true
+		},
+	}
+}
+
+func (builder *transformersBuilder) LookupEntityFromDatastore(context appengine.Context) *transformer {
+	return &transformer{
+		riversCtx: builder.context,
+		gaeCtx:    context,
+		transform: func(e Entity) bool {
+			// Send entity to the next downstream transformer in
+			// case it is not possible to look it up from datastore
+			if !e.HasKey() || e.Key().Incomplete() {
+				return true
+			}
+
+			if err := datastore.Get(context, e.Key(), e); err != nil {
+				panic(err)
+			}
+
+			return false
 		},
 	}
 }
