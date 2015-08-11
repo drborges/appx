@@ -26,7 +26,7 @@ func NewUserWithParent(user User) *User {
 	return &User{
 		Name:  user.Name,
 		Email: user.Email,
-		SSN: user.SSN,
+		SSN:   user.SSN,
 		keySpec: &appx.KeySpec{
 			Kind:      "Users",
 			StringID:  user.Name,
@@ -39,7 +39,7 @@ func NewUser(user User) *User {
 	return &User{
 		Name:  user.Name,
 		Email: user.Email,
-		SSN: user.SSN,
+		SSN:   user.SSN,
 		keySpec: &appx.KeySpec{
 			Kind:      "Users",
 			StringID:  user.Name,
@@ -58,4 +58,17 @@ func (user *User) CacheID() string {
 
 func (user *User) Query() *datastore.Query {
 	return datastore.NewQuery(user.keySpec.Kind).Filter("Email=", user.Email).Limit(1)
+}
+
+type Device struct {
+	appx.Model
+	ID    int64
+	Owner string
+}
+
+func (device *Device) KeySpec() *appx.KeySpec {
+	return &appx.KeySpec{
+		Kind:  "Devices",
+		IntID: device.ID,
+	}
 }

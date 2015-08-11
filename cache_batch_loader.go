@@ -43,6 +43,7 @@ func (batch *CacheBatchLoader) Commit(out rx.OutStream) {
 		}
 		// Set entity key back
 		batch.items[id].Entity.SetKey(batch.items[id].Key)
+
 		delete(batch.items, id)
 	}
 

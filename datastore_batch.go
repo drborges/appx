@@ -69,6 +69,7 @@ func (batch *DatastoreBatchSaver) Commit(out rx.OutStream) {
 	// key is the one returned by PutMulti
 	for i, key := range keys {
 		batch.entities[i].SetKey(key)
+		out <- batch.entities[i]
 	}
 
 	batch.entities = []Entity{}

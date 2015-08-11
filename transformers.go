@@ -132,6 +132,8 @@ func (builder *transformersBuilder) UpdateEntitiesInDatastore(context appengine.
 
 		onData: func(data rx.T, out rx.OutStream) {
 			entity, ok := data.(Entity)
+			// TODO if it is not possible to update datastore,
+			// Then the process should not go any further
 			if !ok {
 				out <- data
 				return
