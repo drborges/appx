@@ -22,8 +22,8 @@ func (datastore *Datastore) LoadAll(entities ...Entity) error {
 	transformer := NewTransformer(context)
 	rivers.NewWith(context).FromSlice(entities).
 		Apply(transformer.ResolveEntityKey(datastore.context)).
-		Apply(transformer.LoadEntitiesFromCacheInBatch(datastore.context)).
-		Apply(transformer.LookupEntitiesFromDatastoreInBatch(datastore.context)).
+		Apply(transformer.LoadEntitiesFromCache(datastore.context)).
+		Apply(transformer.LookupEntitiesFromDatastore(datastore.context)).
 		Apply(transformer.QueryEntityFromDatastore(datastore.context)).
 		Drain()
 

@@ -80,7 +80,7 @@ func TestLoadEntityFromCache(t *testing.T) {
 
 	Convey("Given I have a load entity from cache transformer", t, func() {
 		riversCtx := rivers.NewContext()
-		loader := appx.NewTransformer(riversCtx).LoadEntitiesFromCacheInBatch(gaeCtx)
+		loader := appx.NewTransformer(riversCtx).LoadEntitiesFromCache(gaeCtx)
 
 		Convey("And I have a cached entity", func() {
 			cached := appx.CachedEntity{
@@ -142,7 +142,7 @@ func TestLookupEntityFromDatastore(t *testing.T) {
 
 	Convey("Given I have a lookup entity from datastore transformer", t, func() {
 		riversCtx := rivers.NewContext()
-		lookup := appx.NewTransformer(riversCtx).LookupEntitiesFromDatastoreInBatch(gaeCtx)
+		lookup := appx.NewTransformer(riversCtx).LookupEntitiesFromDatastore(gaeCtx)
 
 		Convey("When I transform the inbound stream with entities that cannot be looked up", func() {
 			userMissingKey := &User{}

@@ -28,8 +28,8 @@ func (builder *transformersBuilder) ResolveEntityKey(context appengine.Context) 
 	}
 }
 
-func (builder *transformersBuilder) LoadEntitiesFromCacheInBatch(context appengine.Context) *observer {
-	batch := NewCacheBatch(context)
+func (builder *transformersBuilder) LoadEntitiesFromCache(context appengine.Context) *observer {
+	batch := NewCacheBatchLoaderWithSize(context, 1000)
 	return &observer{
 		context: builder.context,
 
@@ -63,8 +63,8 @@ func (builder *transformersBuilder) LoadEntitiesFromCacheInBatch(context appengi
 	}
 }
 
-func (builder *transformersBuilder) LookupEntitiesFromDatastoreInBatch(context appengine.Context) *observer {
-	batch := NewDatastoreBatch(context)
+func (builder *transformersBuilder) LookupEntitiesFromDatastore(context appengine.Context) *observer {
+	batch := NewDatastoreBatchLoaderWithSize(context, 1000)
 	return &observer{
 		context: builder.context,
 
