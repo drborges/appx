@@ -92,7 +92,7 @@ func TestResolveEntityKey(t *testing.T) {
 	})
 }
 
-func TestLoadEntityFromCache(t *testing.T) {
+func TestLoadEntitiesFromCache(t *testing.T) {
 	gaeCtx, _ := aetest.NewContext(nil)
 	defer gaeCtx.Close()
 
@@ -156,7 +156,7 @@ func TestLoadEntityFromCache(t *testing.T) {
 	})
 }
 
-func TestLookupEntityFromDatastore(t *testing.T) {
+func TestLookupEntitiesFromDatastore(t *testing.T) {
 	gaeCtx, _ := aetest.NewContext(nil)
 	defer gaeCtx.Close()
 
@@ -482,6 +482,149 @@ func TestUpdateEntitiesInCache(t *testing.T) {
 						So(newUserFromCache.Email, ShouldResemble, newUser.Email)
 						So(newUserFromCache.Key(), ShouldResemble, newUser.Key())
 						So(newUserFromCache.ParentKey(), ShouldResemble, newUser.ParentKey())
+					})
+				})
+			})
+		})
+	})
+}
+
+func TestDeleteEntitiesFromCache(t *testing.T) {
+	gaeCtx, _ := aetest.NewContext(nil)
+	defer gaeCtx.Close()
+
+	cachedUser1 := NewUserWithParent(User{
+		Name:  "Borges",
+		Email: "drborges.cic@gmail.com",
+		SSN:   "123123123",
+	})
+
+	cachedUser2 := NewUserWithParent(User{
+		Name:  "Borges",
+		Email: "drborges.cic@gmail.com",
+		SSN:   "123123123",
+	})
+
+	appx.NewKeyResolver(gaeCtx).Resolve(cachedUser1)
+	appx.NewKeyResolver(gaeCtx).Resolve(cachedUser2)
+
+	Convey("Given I have a load entity from cache transformer", t, func() {
+		riversCtx := rivers.NewContext()
+		transformer := appx.NewTransformer(riversCtx).DeleteEntitiesFromCache(gaeCtx)
+
+		Convey("And I have a cached entity", func() {
+			cached1 := appx.CachedEntity{
+				Entity:    cachedUser1,
+				Key:       cachedUser1.Key(),
+				ParentKey: cachedUser1.ParentKey(),
+			}
+
+			cached2 := appx.CachedEntity{
+				Entity:    cachedUser2,
+				Key:       cachedUser2.Key(),
+				ParentKey: cachedUser2.ParentKey(),
+			}
+
+			memcache.JSON.Set(gaeCtx, &memcache.Item{
+				Key:    cachedUser1.CacheID(),
+				Object: cached1,
+			})
+
+			memcache.JSON.Set(gaeCtx, &memcache.Item{
+				Key:    cachedUser2.CacheID(),
+				Object: cached2,
+			})
+
+			Convey("When I transform the inbound entity stream", func() {
+				notCacheable := &Entity{}
+				userNotCached := NewUser(User{})
+				userFromCache1 := NewUser(User{
+					SSN: cachedUser1.SSN,
+				})
+
+				userFromCache2 := NewUser(User{
+					SSN: cachedUser2.SSN,
+				})
+
+				in, out := rx.NewStream(4)
+				out <- userFromCache1
+				out <- userNotCached
+				out <- userFromCache2
+				out <- notCacheable
+				close(out)
+
+				stream := transformer.Transform(in)
+
+				Convey("Then all entities are sent downstream", func() {
+					So(<-stream, ShouldEqual, userFromCache1)
+					So(<-stream, ShouldEqual, userNotCached)
+					So(<-stream, ShouldEqual, userFromCache2)
+					So(<-stream, ShouldEqual, notCacheable)
+
+					_, opened := <-stream
+					So(opened, ShouldBeFalse)
+
+					Convey("And all cached entities are deleted", func() {
+						_, err := memcache.Get(gaeCtx, cachedUser1.CacheID())
+						So(err, ShouldEqual, memcache.ErrCacheMiss)
+						_, err = memcache.Get(gaeCtx, cachedUser2.CacheID())
+						So(err, ShouldEqual, memcache.ErrCacheMiss)
+					})
+				})
+			})
+		})
+	})
+}
+
+func TestDeleteEntitiesFromDatastore(t *testing.T) {
+	gaeCtx, _ := aetest.NewContext(nil)
+	defer gaeCtx.Close()
+
+	userMissingKey := NewUser(User{
+		Name:  "Another User",
+		Email: "user@email.com",
+	})
+
+	existentUser1 := NewUser(User{
+		Name:  "Diego",
+		Email: "diego@email.com",
+	})
+
+	existentUser2 := NewUser(User{
+		Name:  "Borges",
+		Email: "borges@email.com",
+	})
+
+	appx.NewKeyResolver(gaeCtx).Resolve(existentUser1)
+	appx.NewKeyResolver(gaeCtx).Resolve(existentUser2)
+
+	Convey("Given I have a delete entities from datastore transformer", t, func() {
+		riversCtx := rivers.NewContext()
+		transformer := appx.NewTransformer(riversCtx).DeleteEntitiesFromDatastore(gaeCtx)
+
+		Convey("And I have existent entities", func() {
+			datastore.Put(gaeCtx, existentUser1.Key(), existentUser1)
+			datastore.Put(gaeCtx, existentUser2.Key(), existentUser2)
+
+			Convey("When I transform the inbound stream", func() {
+				in, out := rx.NewStream(4)
+				out <- existentUser2
+				out <- userMissingKey
+				out <- existentUser1
+				out <- "notAnEntity"
+				close(out)
+
+				stream := transformer.Transform(in)
+
+				Convey("Then entities missing keys and non entities are sent downstream", func() {
+					So(stream.Read(), ShouldResemble, []rx.T{userMissingKey, "notAnEntity"})
+
+					Convey("And entities with keys are deleted from datastore", func() {
+						err := datastore.Get(gaeCtx, existentUser1.Key(), existentUser1)
+						So(err, ShouldEqual, datastore.ErrNoSuchEntity)
+
+						err = datastore.Get(gaeCtx, existentUser2.Key(), existentUser2)
+						So(err, ShouldEqual, datastore.ErrNoSuchEntity)
 					})
 				})
 			})

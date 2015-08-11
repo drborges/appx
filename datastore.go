@@ -45,3 +45,15 @@ func (datastore *Datastore) SaveAll(entities ...Entity) error {
 
 	return context.Err()
 }
+
+func (datastore *Datastore) DeleteAll(entities ...Entity) error {
+	context := rivers.NewContext()
+	transformer := NewTransformer(context)
+	rivers.NewWith(context).FromSlice(entities).
+		Apply(transformer.ResolveEntityKey(datastore.context)).
+		Apply(transformer.DeleteEntitiesFromCache(datastore.context)).
+		Apply(transformer.DeleteEntitiesFromDatastore(datastore.context)).
+		Drain()
+
+	return context.Err()
+}
