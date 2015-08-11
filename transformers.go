@@ -145,3 +145,38 @@ func (builder *transformersBuilder) UpdateEntitiesInDatastore(context appengine.
 		},
 	}
 }
+
+func (builder *transformersBuilder) UpdateEntitiesInCache(context appengine.Context) *observer {
+	batch := NewCacheBatchSetterWithSize(context, 500)
+	return &observer{
+		context: builder.context,
+
+		onComplete: func(out rx.OutStream) {
+			batch.Commit(out)
+		},
+
+		onData: func(data rx.T, out rx.OutStream) {
+			entity, ok := data.(Entity)
+			if !ok {
+				out <- data
+				return
+			}
+
+			cacheable, ok := data.(Cacheable)
+			if !ok {
+				out <- data
+				return
+			}
+
+			if cacheable.CacheID() == "" {
+				out <- entity
+				return
+			}
+
+			batch.Add(data)
+			if batch.Full() {
+				batch.Commit(out)
+			}
+		},
+	}
+}

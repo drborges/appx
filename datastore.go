@@ -36,7 +36,7 @@ func (datastore *Datastore) UpdateAll(entities ...Entity) error {
 	rivers.NewWith(context).FromSlice(entities).
 		Apply(transformer.ResolveEntityKey(datastore.context)).
 		Apply(transformer.UpdateEntitiesInDatastore(datastore.context)).
-//		Apply(transformer.UpdateEntitiesInCache(datastore.context)).
+		Apply(transformer.UpdateEntitiesInCache(datastore.context)).
 		Drain()
 
 	return context.Err()

@@ -361,3 +361,95 @@ func TestUpdateEntitiesInDatastore(t *testing.T) {
 		})
 	})
 }
+
+func TestUpdateEntitiesInCache(t *testing.T) {
+	gaeCtx, _ := aetest.NewContext(nil)
+	defer gaeCtx.Close()
+
+	cachedUser := NewUserWithParent(User{
+		Name:  "Borges",
+		Email: "drborges.cic@gmail.com",
+	})
+
+	newUser := NewUserWithParent(User{
+		Name:  "Diego",
+		Email: "diego@email.com",
+	})
+
+	cachedUser.SetParentKey(datastore.NewKey(gaeCtx, "Parent", "parent id", 0, nil))
+	newUser.SetParentKey(datastore.NewKey(gaeCtx, "Parent", "parent id", 0, nil))
+	appx.NewKeyResolver(gaeCtx).Resolve(cachedUser)
+	appx.NewKeyResolver(gaeCtx).Resolve(newUser)
+
+	Convey("Given I have a update entities in cache transformer", t, func() {
+		riversCtx := rivers.NewContext()
+		transformer := appx.NewTransformer(riversCtx).UpdateEntitiesInCache(gaeCtx)
+
+		Convey("And I have a cached entity", func() {
+			cached := appx.CachedEntity{
+				Entity:    cachedUser,
+				Key:       cachedUser.Key(),
+				ParentKey: cachedUser.ParentKey(),
+			}
+
+			memcache.JSON.Set(gaeCtx, &memcache.Item{
+				Key:    cachedUser.CacheID(),
+				Object: cached,
+			})
+
+			Convey("When I transform the inbound entity stream", func() {
+				notCacheable := &Entity{}
+				cachedUser.Name = "borges"
+
+				in, out := rx.NewStream(4)
+				out <- cachedUser
+				out <- notCacheable
+				out <- newUser
+				out <- "notAnEntity"
+				close(out)
+
+				stream := transformer.Transform(in)
+
+				Convey("Then data that is not cacheable and nor an entity are sent downstream", func() {
+					So(<-stream, ShouldEqual, notCacheable)
+					So(<-stream, ShouldEqual, "notAnEntity")
+
+					_, opened := <-stream
+					So(opened, ShouldBeFalse)
+
+					Convey("And all cacheable entities are saved in the cache", func() {
+						cachedUserFromCache := &User{}
+						newUserFromCache := &User{}
+
+						cachedEntity1 := &appx.CachedEntity{
+							Entity: cachedUserFromCache,
+						}
+
+						cachedEntity2 := &appx.CachedEntity{
+							Entity: newUserFromCache,
+						}
+
+						_, err := memcache.JSON.Get(gaeCtx, cachedUser.CacheID(), cachedEntity1)
+						So(err, ShouldBeNil)
+
+						_, err = memcache.JSON.Get(gaeCtx, newUser.CacheID(), cachedEntity2)
+						So(err, ShouldBeNil)
+
+						cachedEntity1.Entity.SetKey(cachedEntity1.Key)
+						cachedEntity2.Entity.SetKey(cachedEntity2.Key)
+
+						So(cachedUserFromCache.Name, ShouldResemble, cachedUser.Name)
+						So(cachedUserFromCache.Email, ShouldResemble, cachedUser.Email)
+						So(cachedUserFromCache.Key(), ShouldResemble, cachedUser.Key())
+						So(cachedUserFromCache.ParentKey(), ShouldResemble, cachedUser.ParentKey())
+
+						So(newUserFromCache.Name, ShouldResemble, newUser.Name)
+						So(newUserFromCache.Email, ShouldResemble, newUser.Email)
+						So(newUserFromCache.Key(), ShouldResemble, newUser.Key())
+						So(newUserFromCache.ParentKey(), ShouldResemble, newUser.ParentKey())
+					})
+				})
+			})
+		})
+	})
+}
