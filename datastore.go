@@ -2,6 +2,7 @@ package appx
 
 import (
 	"appengine"
+	"appengine/datastore"
 	"github.com/drborges/riversv2"
 )
 
@@ -48,4 +49,8 @@ func (datastore *Datastore) Delete(entities ...Entity) error {
 		Drain()
 
 	return context.Err()
+}
+
+func (datastore *Datastore) Query(q *datastore.Query) *runner {
+	return &runner{datastore.context, q}
 }
