@@ -2,6 +2,7 @@ package appx
 
 import (
 	"appengine"
+	"appengine/memcache"
 	"github.com/drborges/riversv2/rx"
 )
 
@@ -33,7 +34,12 @@ func (builder *transformersBuilder) ResolveEntityKey(context appengine.Context) 
 }
 
 func (builder *transformersBuilder) LoadEntitiesFromCache(context appengine.Context) *observer {
-	batch := NewCacheBatchLoaderWithSize(context, 1000)
+	batch := &cacheBatchLoader{
+		context: context,
+		size:    1000,
+		items:   make(map[string]*CachedEntity),
+	}
+
 	return &observer{
 		context: builder.context,
 
@@ -68,7 +74,10 @@ func (builder *transformersBuilder) LoadEntitiesFromCache(context appengine.Cont
 }
 
 func (builder *transformersBuilder) LookupEntitiesFromDatastore(context appengine.Context) *observer {
-	batch := NewDatastoreBatchLoaderWithSize(context, 1000)
+	batch := &datastoreBatchLoader{}
+	batch.context = context
+	batch.size = 1000
+
 	return &observer{
 		context: builder.context,
 
@@ -122,7 +131,10 @@ func (builder *transformersBuilder) QueryEntityFromDatastore(context appengine.C
 }
 
 func (builder *transformersBuilder) UpdateEntitiesInDatastore(context appengine.Context) *observer {
-	batch := NewDatastoreBatchSaverWithSize(context, 500)
+	batch := &datastoreBatchSaver{}
+	batch.context = context
+	batch.size = 500
+
 	return &observer{
 		context: builder.context,
 
@@ -153,7 +165,12 @@ func (builder *transformersBuilder) UpdateEntitiesInDatastore(context appengine.
 }
 
 func (builder *transformersBuilder) UpdateEntitiesInCache(context appengine.Context) *observer {
-	batch := NewCacheBatchSetterWithSize(context, 500)
+	batch := &cacheBatchSetter{
+		context: context,
+		size:    500,
+		items:   []*memcache.Item{},
+	}
+
 	return &observer{
 		context: builder.context,
 
@@ -188,7 +205,11 @@ func (builder *transformersBuilder) UpdateEntitiesInCache(context appengine.Cont
 }
 
 func (builder *transformersBuilder) DeleteEntitiesFromCache(context appengine.Context) *observer {
-	batch := NewCacheBatchDeleterWithSize(context, 500)
+	batch := &cacheBatchDeleter{
+		context: context,
+		size:    500,
+	}
+
 	return &observer{
 		context: builder.context,
 
@@ -225,7 +246,10 @@ func (builder *transformersBuilder) DeleteEntitiesFromCache(context appengine.Co
 }
 
 func (builder *transformersBuilder) DeleteEntitiesFromDatastore(context appengine.Context) *observer {
-	batch := NewDatastoreBatchDeleterWithSize(context, 500)
+	batch := &datastoreBatchDeleter{}
+	batch.context = context
+	batch.size = 500
+
 	return &observer{
 		context: builder.context,
 

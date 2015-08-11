@@ -370,8 +370,13 @@ func TestUpdateEntitiesInDatastore(t *testing.T) {
 
 				stream := transformer.Transform(in)
 
-				Convey("Then entities missing keys and non entities are sent downstream", func() {
-					So(stream.Read(), ShouldResemble, []rx.T{userMissingKey, "notAnEntity"})
+				Convey("Then all entities are sent downstream", func() {
+					So(stream.Read(), ShouldResemble, []rx.T{
+						userMissingKey,
+						"notAnEntity",
+						existentUser,
+						newUser,
+					})
 
 					Convey("And new users are created", func() {
 						var userFromDatastore User

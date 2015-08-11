@@ -7,30 +7,22 @@ import (
 	"github.com/drborges/riversv2/rx"
 )
 
-type CacheBatchLoader struct {
+type cacheBatchLoader struct {
 	context appengine.Context
 	size    int
 	ids     []string
 	items   map[string]*CachedEntity
 }
 
-func NewCacheBatchLoaderWithSize(context appengine.Context, size int) *CacheBatchLoader {
-	return &CacheBatchLoader{
-		context: context,
-		size:    size,
-		items:   make(map[string]*CachedEntity),
-	}
-}
-
-func (batch *CacheBatchLoader) Full() bool {
+func (batch *cacheBatchLoader) Full() bool {
 	return len(batch.items) == batch.size
 }
 
-func (batch *CacheBatchLoader) Empty() bool {
+func (batch *cacheBatchLoader) Empty() bool {
 	return len(batch.items) == 0
 }
 
-func (batch *CacheBatchLoader) Commit(out rx.OutStream) {
+func (batch *cacheBatchLoader) Commit(out rx.OutStream) {
 	items, err := memcache.GetMulti(batch.context, batch.ids)
 
 	if err != nil {
@@ -58,7 +50,7 @@ func (batch *CacheBatchLoader) Commit(out rx.OutStream) {
 	}
 }
 
-func (batch *CacheBatchLoader) Add(data rx.T) {
+func (batch *cacheBatchLoader) Add(data rx.T) {
 	if cacheable, ok := data.(Cacheable); ok {
 		entity := cacheable.(Entity)
 		batch.ids = append(batch.ids, cacheable.CacheID())

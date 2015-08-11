@@ -7,29 +7,21 @@ import (
 	"github.com/drborges/riversv2/rx"
 )
 
-type CacheBatchSetter struct {
+type cacheBatchSetter struct {
 	context appengine.Context
 	size    int
 	items   []*memcache.Item
 }
 
-func NewCacheBatchSetterWithSize(context appengine.Context, size int) *CacheBatchSetter {
-	return &CacheBatchSetter{
-		context: context,
-		size:    size,
-		items:   []*memcache.Item{},
-	}
-}
-
-func (batch *CacheBatchSetter) Full() bool {
+func (batch *cacheBatchSetter) Full() bool {
 	return len(batch.items) == batch.size
 }
 
-func (batch *CacheBatchSetter) Empty() bool {
+func (batch *cacheBatchSetter) Empty() bool {
 	return len(batch.items) == 0
 }
 
-func (batch *CacheBatchSetter) Commit(out rx.OutStream) {
+func (batch *cacheBatchSetter) Commit(out rx.OutStream) {
 	if batch.Empty() {
 		return
 	}
@@ -41,7 +33,7 @@ func (batch *CacheBatchSetter) Commit(out rx.OutStream) {
 	batch.items = []*memcache.Item{}
 }
 
-func (batch *CacheBatchSetter) Add(data rx.T) {
+func (batch *cacheBatchSetter) Add(data rx.T) {
 	if cacheable, ok := data.(Cacheable); ok {
 		entity := cacheable.(Entity)
 		cachedEntity := &CachedEntity{

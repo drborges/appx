@@ -28,18 +28,11 @@ func (batch *DatastoreBatch) Add(data rx.T) {
 	}
 }
 
-type DatastoreBatchLoader struct {
+type datastoreBatchLoader struct {
 	DatastoreBatch
 }
 
-func NewDatastoreBatchLoaderWithSize(context appengine.Context, size int) *DatastoreBatchLoader {
-	batch := &DatastoreBatchLoader{}
-	batch.context = context
-	batch.size = size
-	return batch
-}
-
-func (batch *DatastoreBatchLoader) Commit(out rx.OutStream) {
+func (batch *datastoreBatchLoader) Commit(out rx.OutStream) {
 	if err := datastore.GetMulti(batch.context, batch.keys, batch.entities); err != nil {
 		panic(err)
 	}
@@ -47,18 +40,11 @@ func (batch *DatastoreBatchLoader) Commit(out rx.OutStream) {
 	batch.keys = []*datastore.Key{}
 }
 
-type DatastoreBatchSaver struct {
+type datastoreBatchSaver struct {
 	DatastoreBatch
 }
 
-func NewDatastoreBatchSaverWithSize(context appengine.Context, size int) *DatastoreBatchSaver {
-	batch := &DatastoreBatchSaver{}
-	batch.context = context
-	batch.size = size
-	return batch
-}
-
-func (batch *DatastoreBatchSaver) Commit(out rx.OutStream) {
+func (batch *datastoreBatchSaver) Commit(out rx.OutStream) {
 	keys, err := datastore.PutMulti(batch.context, batch.keys, batch.entities)
 	if err != nil {
 		panic(err)
@@ -76,18 +62,11 @@ func (batch *DatastoreBatchSaver) Commit(out rx.OutStream) {
 	batch.keys = []*datastore.Key{}
 }
 
-type DatastoreBatchDeleter struct {
+type datastoreBatchDeleter struct {
 	DatastoreBatch
 }
 
-func NewDatastoreBatchDeleterWithSize(context appengine.Context, size int) *DatastoreBatchDeleter {
-	batch := &DatastoreBatchDeleter{}
-	batch.context = context
-	batch.size = size
-	return batch
-}
-
-func (batch *DatastoreBatchDeleter) Commit(out rx.OutStream) {
+func (batch *datastoreBatchDeleter) Commit(out rx.OutStream) {
 	if err := datastore.DeleteMulti(batch.context, batch.keys); err != nil {
 		panic(err)
 	}
