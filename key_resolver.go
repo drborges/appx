@@ -29,4 +29,3 @@ func (resolver *KeyResolver) Resolve(e Entity) error {
 
 	return nil
 }
-

@@ -1,8 +1,8 @@
 package appx_test
 
 import (
-	"github.com/drborges/appxv2"
 	"appengine/datastore"
+	"github.com/drborges/appxv2"
 )
 
 type Entity struct {
@@ -23,11 +23,11 @@ type User struct {
 
 func NewUserWithParent(user User) *User {
 	return &User{
-		Name: user.Name,
+		Name:  user.Name,
 		Email: user.Email,
 		keySpec: &appx.KeySpec{
-			Kind: "Users",
-			StringID: user.Name,
+			Kind:      "Users",
+			StringID:  user.Name,
 			HasParent: true,
 		},
 	}
@@ -35,11 +35,11 @@ func NewUserWithParent(user User) *User {
 
 func NewUser(user User) *User {
 	return &User{
-		Name: user.Name,
+		Name:  user.Name,
 		Email: user.Email,
 		keySpec: &appx.KeySpec{
-			Kind: "Users",
-			StringID: user.Name,
+			Kind:      "Users",
+			StringID:  user.Name,
 			HasParent: false,
 		},
 	}

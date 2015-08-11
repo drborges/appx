@@ -5,7 +5,7 @@ import (
 )
 
 type transformer struct {
-	context rx.Context
+	context   rx.Context
 	transform func(Entity) bool
 }
 
