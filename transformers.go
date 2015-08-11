@@ -18,8 +18,13 @@ func NewTransformer(context rx.Context) *transformersBuilder {
 func (builder *transformersBuilder) ResolveEntityKey(context appengine.Context) *transformer {
 	return &transformer{
 		context: builder.context,
-		transform: func(e Entity) bool {
-			NewKeyResolver(context).Resolve(e)
+		transform: func(data rx.T) bool {
+			entity, ok := data.(Entity)
+			if !ok {
+				return false
+			}
+
+			NewKeyResolver(context).Resolve(entity)
 			return true
 		},
 	}
@@ -28,25 +33,32 @@ func (builder *transformersBuilder) ResolveEntityKey(context appengine.Context) 
 func (builder *transformersBuilder) LoadEntityFromCache(context appengine.Context) *transformer {
 	return &transformer{
 		context: builder.context,
-		transform: func(e Entity) bool {
-			if cacheable, ok := e.(Cacheable); ok {
-				cachedEntity := CachedEntity{
-					Entity: e,
-				}
-				_, err := memcache.JSON.Get(context, cacheable.CacheID(), &cachedEntity)
-				if err == memcache.ErrCacheMiss {
-					return true
-				}
-
-				if err != nil {
-					panic(err)
-				}
-
-				e.SetKey(cachedEntity.Key)
+		transform: func(data rx.T) bool {
+			entity, ok := data.(Entity)
+			if !ok {
 				return false
 			}
 
-			return true
+			cacheable, ok := data.(Cacheable)
+			if !ok {
+				return true
+			}
+
+			cachedEntity := CachedEntity{
+				Entity: entity,
+			}
+
+			_, err := memcache.JSON.Get(context, cacheable.CacheID(), &cachedEntity)
+			if err == memcache.ErrCacheMiss {
+				return true
+			}
+
+			if err != nil {
+				panic(err)
+			}
+
+			entity.SetKey(cachedEntity.Key)
+			return false
 		},
 	}
 }
@@ -54,17 +66,22 @@ func (builder *transformersBuilder) LoadEntityFromCache(context appengine.Contex
 func (builder *transformersBuilder) LookupEntityFromDatastore(context appengine.Context) *transformer {
 	return &transformer{
 		context: builder.context,
-		transform: func(e Entity) bool {
+		transform: func(data rx.T) bool {
+			entity, ok := data.(Entity)
+			if !ok {
+				return false
+			}
+
 			// Send entity to the next downstream transformer in
 			// case it is not possible to look it up from datastore
-			if !e.HasKey() || e.Key().Incomplete() {
+			if !entity.HasKey() || entity.Key().Incomplete() {
 				return true
 			}
 
 			// TODO Consider not panicing on this situation
 			// In case the entity gets to this point with a key and still cannot
 			// be lookuped up, should we move forward downstream?
-			if err := datastore.Get(context, e.Key(), e); err != nil {
+			if err := datastore.Get(context, entity.Key(), entity); err != nil {
 				panic(err)
 			}
 
@@ -76,21 +93,24 @@ func (builder *transformersBuilder) LookupEntityFromDatastore(context appengine.
 func (builder *transformersBuilder) QueryEntityFromDatastore(context appengine.Context) *transformer {
 	return &transformer{
 		context: builder.context,
-		transform: func(e Entity) bool {
-			// Send entity to the next downstream transformer in
-			// case it is not possible to look it up from datastore
-
-			if queryable, ok := e.(Queryable); ok {
-				key, err := queryable.Query().Run(context).Next(e)
-				if err != nil {
-					panic(err)
-				}
-
-				e.SetKey(key)
+		transform: func(data rx.T) bool {
+			entity, ok := data.(Entity)
+			if !ok {
 				return false
 			}
 
-			return true
+			queryable, ok := data.(Queryable)
+			if !ok {
+				return true
+			}
+
+			key, err := queryable.Query().Run(context).Next(data)
+			if err != nil {
+				panic(err)
+			}
+
+			entity.SetKey(key)
+			return false
 		},
 	}
 }

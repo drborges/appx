@@ -25,3 +25,4 @@ func (datastore *Datastore) Load(e Entity) error {
 
 	return context.Err()
 }
+
