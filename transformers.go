@@ -116,3 +116,32 @@ func (builder *transformersBuilder) QueryEntityFromDatastore(context appengine.C
 		},
 	}
 }
+
+func (builder *transformersBuilder) UpdateEntitiesInDatastore(context appengine.Context) *observer {
+	batch := NewDatastoreBatchSaverWithSize(context, 500)
+	return &observer{
+		context: builder.context,
+
+		onComplete: func(out rx.OutStream) {
+			batch.Commit(out)
+		},
+
+		onData: func(data rx.T, out rx.OutStream) {
+			entity, ok := data.(Entity)
+			if !ok {
+				out <- data
+				return
+			}
+
+			if !entity.HasKey() {
+				out <- data
+				return
+			}
+
+			batch.Add(data)
+			if batch.Full() {
+				batch.Commit(out)
+			}
+		},
+	}
+}

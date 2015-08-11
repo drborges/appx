@@ -51,8 +51,8 @@ type DatastoreBatchSaver struct {
 	DatastoreBatch
 }
 
-func NewDatastoreBatchSaverWithSize(context appengine.Context, size int) *DatastoreBatchLoader {
-	batch := &DatastoreBatchLoader{}
+func NewDatastoreBatchSaverWithSize(context appengine.Context, size int) *DatastoreBatchSaver {
+	batch := &DatastoreBatchSaver{}
 	batch.context = context
 	batch.size = size
 	return batch

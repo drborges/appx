@@ -29,3 +29,15 @@ func (datastore *Datastore) LoadAll(entities ...Entity) error {
 
 	return context.Err()
 }
+
+func (datastore *Datastore) UpdateAll(entities ...Entity) error {
+	context := rivers.NewContext()
+	transformer := NewTransformer(context)
+	rivers.NewWith(context).FromSlice(entities).
+		Apply(transformer.ResolveEntityKey(datastore.context)).
+		Apply(transformer.UpdateEntitiesInDatastore(datastore.context)).
+//		Apply(transformer.UpdateEntitiesInCache(datastore.context)).
+		Drain()
+
+	return context.Err()
+}
