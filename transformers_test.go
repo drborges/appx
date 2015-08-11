@@ -555,8 +555,10 @@ func TestDeleteEntitiesFromCache(t *testing.T) {
 
 				stream := transformer.Transform(in)
 
-				Convey("Then non cached entities are sent downstream", func() {
+				Convey("Then all entities are sent downstream", func() {
+					So(<-stream, ShouldEqual, userFromCache1)
 					So(<-stream, ShouldEqual, userNotCached)
+					So(<-stream, ShouldEqual, userFromCache2)
 					So(<-stream, ShouldEqual, notCacheable)
 
 					_, opened := <-stream
@@ -567,6 +569,62 @@ func TestDeleteEntitiesFromCache(t *testing.T) {
 						So(err, ShouldEqual, memcache.ErrCacheMiss)
 						_, err = memcache.Get(gaeCtx, cachedUser2.CacheID())
 						So(err, ShouldEqual, memcache.ErrCacheMiss)
+					})
+				})
+			})
+		})
+	})
+}
+
+func TestDeleteEntitiesFromDatastore(t *testing.T) {
+	gaeCtx, _ := aetest.NewContext(nil)
+	defer gaeCtx.Close()
+
+	userMissingKey := NewUser(User{
+		Name:  "Another User",
+		Email: "user@email.com",
+	})
+
+	existentUser1 := NewUser(User{
+		Name:  "Diego",
+		Email: "diego@email.com",
+	})
+
+	existentUser2 := NewUser(User{
+		Name:  "Borges",
+		Email: "borges@email.com",
+	})
+
+	appx.NewKeyResolver(gaeCtx).Resolve(existentUser1)
+	appx.NewKeyResolver(gaeCtx).Resolve(existentUser2)
+
+	Convey("Given I have a delete entities from datastore transformer", t, func() {
+		riversCtx := rivers.NewContext()
+		transformer := appx.NewTransformer(riversCtx).DeleteEntitiesFromDatastore(gaeCtx)
+
+		Convey("And I have existent entities", func() {
+			datastore.Put(gaeCtx, existentUser1.Key(), existentUser1)
+			datastore.Put(gaeCtx, existentUser2.Key(), existentUser2)
+
+			Convey("When I transform the inbound stream", func() {
+				in, out := rx.NewStream(4)
+				out <- existentUser2
+				out <- userMissingKey
+				out <- existentUser1
+				out <- "notAnEntity"
+				close(out)
+
+				stream := transformer.Transform(in)
+
+				Convey("Then entities missing keys and non entities are sent downstream", func() {
+					So(stream.Read(), ShouldResemble, []rx.T{userMissingKey, "notAnEntity"})
+
+					Convey("And entities with keys are deleted from datastore", func() {
+						err := datastore.Get(gaeCtx, existentUser1.Key(), existentUser1)
+						So(err, ShouldEqual, datastore.ErrNoSuchEntity)
+
+						err = datastore.Get(gaeCtx, existentUser2.Key(), existentUser2)
+						So(err, ShouldEqual, datastore.ErrNoSuchEntity)
 					})
 				})
 			})

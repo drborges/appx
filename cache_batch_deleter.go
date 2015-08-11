@@ -28,12 +28,7 @@ func (batch *CacheBatchDeleter) Empty() bool {
 }
 
 func (batch *CacheBatchDeleter) Commit(out rx.OutStream) {
-	err := memcache.DeleteMulti(batch.context, batch.ids)
-
-	if err != nil {
-		panic(err)
-	}
-
+	memcache.DeleteMulti(batch.context, batch.ids)
 	batch.ids = []string{}
 }
 

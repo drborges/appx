@@ -104,7 +104,7 @@ func TestDatastoreSaveAll(t *testing.T) {
 		user1 := NewUser(User{
 			Name:  "Borges",
 			Email: "borges@email.com",
-			SSN: "123123123",
+			SSN:   "123123123",
 		})
 
 		appx.NewKeyResolver(context).Resolve(user1)
@@ -114,7 +114,7 @@ func TestDatastoreSaveAll(t *testing.T) {
 			user2 := NewUser(User{
 				Name:  "Diego",
 				Email: "diego@email.com",
-				SSN: "321321321",
+				SSN:   "321321321",
 			})
 
 			Convey("When I update the entities in datastore", func() {
@@ -139,6 +139,59 @@ func TestDatastoreSaveAll(t *testing.T) {
 					So(user2FromDatastore.Name, ShouldEqual, user2.Name)
 					So(user2FromDatastore.Email, ShouldEqual, user2.Email)
 					So(user2FromDatastore.Key(), ShouldResemble, user2.Key())
+				})
+			})
+		})
+	})
+}
+
+func TestDatastoreDeleteAll(t *testing.T) {
+	context, _ := aetest.NewContext(nil)
+	defer context.Close()
+
+	Convey("Given I have an entity in datastore", t, func() {
+		userInDatastore := NewUser(User{
+			Name:  "Borges",
+			Email: "borges@email.com",
+			SSN:   "123123123",
+		})
+
+		appx.NewKeyResolver(context).Resolve(userInDatastore)
+		datastore.Put(context, userInDatastore.Key(), userInDatastore)
+
+		Convey("And I have a cached entity though not yet saved to datastore", func() {
+			cachedUser := NewUser(User{
+				Name:  "Diego",
+				Email: "diego@email.com",
+				SSN:   "321321321",
+			})
+
+			cached := appx.CachedEntity{
+				Entity:    cachedUser,
+				Key:       cachedUser.Key(),
+				ParentKey: cachedUser.ParentKey(),
+			}
+
+			memcache.JSON.Set(context, &memcache.Item{
+				Key:    cachedUser.CacheID(),
+				Object: cached,
+			})
+
+			Convey("And I have a non existent user", func() {
+				nonExistentUser := NewUser(User{Name: "not existent"})
+
+				Convey("When I delete the all", func() {
+					err := appx.NewDatastore(context).DeleteAll(userInDatastore, cachedUser, nonExistentUser)
+
+					Convey("Then the entities are deleted from cache and datastore", func() {
+						So(err, ShouldBeNil)
+
+						err := datastore.Get(context, userInDatastore.Key(), userInDatastore)
+						So(err, ShouldEqual, datastore.ErrNoSuchEntity)
+
+						_, err = memcache.Get(context, cachedUser.CacheID())
+						So(err, ShouldEqual, memcache.ErrCacheMiss)
+					})
 				})
 			})
 		})

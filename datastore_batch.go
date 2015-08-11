@@ -74,3 +74,23 @@ func (batch *DatastoreBatchSaver) Commit(out rx.OutStream) {
 	batch.entities = []Entity{}
 	batch.keys = []*datastore.Key{}
 }
+
+type DatastoreBatchDeleter struct {
+	DatastoreBatch
+}
+
+func NewDatastoreBatchDeleterWithSize(context appengine.Context, size int) *DatastoreBatchDeleter {
+	batch := &DatastoreBatchDeleter{}
+	batch.context = context
+	batch.size = size
+	return batch
+}
+
+func (batch *DatastoreBatchDeleter) Commit(out rx.OutStream) {
+	if err := datastore.DeleteMulti(batch.context, batch.keys); err != nil {
+		panic(err)
+	}
+
+	batch.entities = []Entity{}
+	batch.keys = []*datastore.Key{}
+}
