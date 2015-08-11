@@ -76,7 +76,7 @@ func TestLoadEntityFromCache(t *testing.T) {
 	})
 
 	cachedUser.SetParentKey(datastore.NewKey(gaeCtx, "Parent", "parent id", 0, nil))
-	appx.NewKeyResolver(gaeCtx).Resolve(cachedUser)
+	appx.NewKeyManager(gaeCtx).Resolve(cachedUser)
 
 	Convey("Given I have a load entity from cache transformer", t, func() {
 		riversCtx := rivers.NewContext()
@@ -147,7 +147,7 @@ func TestLookupEntityFromDatastore(t *testing.T) {
 		Convey("When I transform the inbound stream with entities that cannot be looked up", func() {
 			userMissingKey := &User{}
 			nonExistentUser := NewUser(User{Name: "Borges"})
-			appx.NewKeyResolver(gaeCtx).Resolve(nonExistentUser)
+			appx.NewKeyManager(gaeCtx).Resolve(nonExistentUser)
 
 			in, out := rx.NewStream(2)
 			out <- nonExistentUser
@@ -168,7 +168,7 @@ func TestLookupEntityFromDatastore(t *testing.T) {
 		})
 
 		Convey("And I have an entity in datastore", func() {
-			err := appx.NewKeyResolver(gaeCtx).Resolve(user)
+			err := appx.NewKeyManager(gaeCtx).Resolve(user)
 			So(err, ShouldBeNil)
 
 			_, err = datastore.Put(gaeCtx, user.Key(), user)
@@ -177,7 +177,7 @@ func TestLookupEntityFromDatastore(t *testing.T) {
 			Convey("When I transform the inbound entity stream", func() {
 				userFromDatastore := NewUserWithParent(User{Name: "Borges"})
 				userFromDatastore.SetParentKey(parentKey)
-				appx.NewKeyResolver(gaeCtx).Resolve(userFromDatastore)
+				appx.NewKeyManager(gaeCtx).Resolve(userFromDatastore)
 
 				userMissingKey := NewUser(User{})
 				userWithIncompleteKey := NewUser(User{})
@@ -256,7 +256,7 @@ func TestQueryEntityFromDatastore(t *testing.T) {
 		})
 
 		Convey("And I have an entity in datastore", func() {
-			err := appx.NewKeyResolver(gaeCtx).Resolve(user)
+			err := appx.NewKeyManager(gaeCtx).Resolve(user)
 			So(err, ShouldBeNil)
 
 			_, err = datastore.Put(gaeCtx, user.Key(), user)
@@ -313,8 +313,8 @@ func TestUpdateEntitiesInDatastore(t *testing.T) {
 		Email: "borges@email.com",
 	})
 
-	appx.NewKeyResolver(gaeCtx).Resolve(newUser)
-	appx.NewKeyResolver(gaeCtx).Resolve(existentUser)
+	appx.NewKeyManager(gaeCtx).Resolve(newUser)
+	appx.NewKeyManager(gaeCtx).Resolve(existentUser)
 
 	newUserKeyBeforeUpdate := newUser.Key()
 
@@ -378,8 +378,8 @@ func TestUpdateEntitiesInCache(t *testing.T) {
 
 	cachedUser.SetParentKey(datastore.NewKey(gaeCtx, "Parent", "parent id", 0, nil))
 	newUser.SetParentKey(datastore.NewKey(gaeCtx, "Parent", "parent id", 0, nil))
-	appx.NewKeyResolver(gaeCtx).Resolve(cachedUser)
-	appx.NewKeyResolver(gaeCtx).Resolve(newUser)
+	appx.NewKeyManager(gaeCtx).Resolve(cachedUser)
+	appx.NewKeyManager(gaeCtx).Resolve(newUser)
 
 	Convey("Given I have a update entities in cache transformer", t, func() {
 		riversCtx := rivers.NewContext()

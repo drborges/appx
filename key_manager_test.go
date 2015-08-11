@@ -8,12 +8,12 @@ import (
 	"testing"
 )
 
-func TestKeyResolver(t *testing.T) {
+func TestKeyManager(t *testing.T) {
 	context, _ := aetest.NewContext(nil)
 	defer context.Close()
 
-	Convey("Given I have a key resolver", t, func() {
-		resolver := appx.NewKeyResolver(context)
+	Convey("Given I have a key manager", t, func() {
+		manager := appx.NewKeyManager(context)
 
 		Convey("When I resolve a key of an entity with no parent", func() {
 			entity := &Entity{
@@ -23,7 +23,7 @@ func TestKeyResolver(t *testing.T) {
 				},
 			}
 
-			err := resolver.Resolve(entity)
+			err := manager.Resolve(entity)
 
 			Convey("Then it succeeds", func() {
 				So(err, ShouldBeNil)
@@ -48,7 +48,7 @@ func TestKeyResolver(t *testing.T) {
 			parentKey := datastore.NewKey(context, "Parent", "key", 0, nil)
 			entity.SetParentKey(parentKey)
 
-			err := resolver.Resolve(entity)
+			err := manager.Resolve(entity)
 
 			Convey("Then it succeeds", func() {
 				So(err, ShouldBeNil)
@@ -66,7 +66,7 @@ func TestKeyResolver(t *testing.T) {
 		})
 
 		Convey("When I resolve a key of an entity whose key spec is missing kind information", func() {
-			err := resolver.Resolve(&Entity{
+			err := manager.Resolve(&Entity{
 				keySpec: &appx.KeySpec{},
 			})
 
@@ -76,7 +76,7 @@ func TestKeyResolver(t *testing.T) {
 		})
 
 		Convey("When I resolve a key of an entity whose key spec is of an incomplete key", func() {
-			err := resolver.Resolve(&Entity{
+			err := manager.Resolve(&Entity{
 				keySpec: &appx.KeySpec{Kind: "Entity"},
 			})
 
@@ -86,7 +86,7 @@ func TestKeyResolver(t *testing.T) {
 		})
 
 		Convey("When I resolve a key of an entity whose key spec requires a parent key and it's missing", func() {
-			err := resolver.Resolve(&Entity{
+			err := manager.Resolve(&Entity{
 				keySpec: &appx.KeySpec{
 					Kind:      "Entity",
 					IntID:     123,
@@ -109,7 +109,64 @@ func TestKeyResolver(t *testing.T) {
 			}
 
 			entity.SetParentKey(datastore.NewIncompleteKey(context, "parent", nil))
-			err := resolver.Resolve(entity)
+			err := manager.Resolve(entity)
+
+			Convey("Then it fails key resolution", func() {
+				So(err, ShouldEqual, appx.ErrIncompleteParentKey)
+			})
+		})
+
+		Convey("When I assign a key to an entity whose key spec is incomplete", func() {
+			entity := &Entity{
+				keySpec: &appx.KeySpec{
+					Kind:      "Entity",
+					IntID:     123,
+				},
+			}
+
+			err := manager.Assign(entity)
+
+			Convey("Then it successfully assigns key", func() {
+				So(err, ShouldBeNil)
+				So(entity.Key(), ShouldNotBeNil)
+			})
+		})
+
+		Convey("When I assign a key to an entity whose key spec is missing kind information", func() {
+			err := manager.Assign(&Entity{
+				keySpec: &appx.KeySpec{},
+			})
+
+			Convey("Then it fails key resolution", func() {
+				So(err, ShouldEqual, appx.ErrMissingEntityKind)
+			})
+		})
+
+		Convey("When I assign a key to an entity whose key spec requires a parent key and it's missing", func() {
+			err := manager.Assign(&Entity{
+				keySpec: &appx.KeySpec{
+					Kind:      "Entity",
+					IntID:     123,
+					HasParent: true,
+				},
+			})
+
+			Convey("Then it fails key resolution", func() {
+				So(err, ShouldEqual, appx.ErrMissingParentKey)
+			})
+		})
+
+		Convey("When I assign a key to an entity whose key spec requires a parent key and parent key is incomplete", func() {
+			entity := &Entity{
+				keySpec: &appx.KeySpec{
+					Kind:      "Entity",
+					IntID:     123,
+					HasParent: true,
+				},
+			}
+
+			entity.SetParentKey(datastore.NewIncompleteKey(context, "parent", nil))
+			err := manager.Assign(entity)
 
 			Convey("Then it fails key resolution", func() {
 				So(err, ShouldEqual, appx.ErrIncompleteParentKey)

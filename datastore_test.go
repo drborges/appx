@@ -19,7 +19,7 @@ func TestDatastoreLoad(t *testing.T) {
 		Email: "drborges.cic@gmail.com",
 	})
 
-	appx.NewKeyResolver(context).Resolve(user)
+	appx.NewKeyManager(context).Resolve(user)
 
 	Convey("Given I have a cached entity", t, func() {
 

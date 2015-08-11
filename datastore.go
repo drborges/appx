@@ -13,8 +13,8 @@ func NewDatastore(context appengine.Context) *Datastore {
 	return &Datastore{context}
 }
 
-func (datastore *Datastore) Load(e Entity) error {
-	return datastore.LoadAll(e)
+func (datastore *Datastore) Load(entity Entity) error {
+	return datastore.LoadAll(entity)
 }
 
 func (datastore *Datastore) LoadAll(entities ...Entity) error {
@@ -28,6 +28,10 @@ func (datastore *Datastore) LoadAll(entities ...Entity) error {
 		Drain()
 
 	return context.Err()
+}
+
+func (datastore *Datastore) Update(entity Entity) error {
+	return datastore.UpdateAll(entity)
 }
 
 func (datastore *Datastore) UpdateAll(entities ...Entity) error {
