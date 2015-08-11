@@ -22,9 +22,21 @@ func (datastore *Datastore) LoadAll(entities ...Entity) error {
 	transformer := NewTransformer(context)
 	rivers.NewWith(context).FromSlice(entities).
 		Apply(transformer.ResolveEntityKey(datastore.context)).
-		Apply(transformer.LoadEntitiesFromCacheInBatch(datastore.context)).
-		Apply(transformer.LookupEntitiesFromDatastoreInBatch(datastore.context)).
+		Apply(transformer.LoadEntitiesFromCache(datastore.context)).
+		Apply(transformer.LookupEntitiesFromDatastore(datastore.context)).
 		Apply(transformer.QueryEntityFromDatastore(datastore.context)).
+		Drain()
+
+	return context.Err()
+}
+
+func (datastore *Datastore) UpdateAll(entities ...Entity) error {
+	context := rivers.NewContext()
+	transformer := NewTransformer(context)
+	rivers.NewWith(context).FromSlice(entities).
+		Apply(transformer.ResolveEntityKey(datastore.context)).
+		Apply(transformer.UpdateEntitiesInDatastore(datastore.context)).
+		Apply(transformer.UpdateEntitiesInCache(datastore.context)).
 		Drain()
 
 	return context.Err()

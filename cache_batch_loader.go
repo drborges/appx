@@ -7,28 +7,30 @@ import (
 	"github.com/drborges/riversv2/rx"
 )
 
-type CacheBatch struct {
+type CacheBatchLoader struct {
 	context appengine.Context
+	size    int
 	ids     []string
 	items   map[string]*CachedEntity
 }
 
-func NewCacheBatch(context appengine.Context) *CacheBatch {
-	return &CacheBatch{
+func NewCacheBatchLoaderWithSize(context appengine.Context, size int) *CacheBatchLoader {
+	return &CacheBatchLoader{
 		context: context,
+		size:    size,
 		items:   make(map[string]*CachedEntity),
 	}
 }
 
-func (batch *CacheBatch) Full() bool {
-	return len(batch.items) == 1000
+func (batch *CacheBatchLoader) Full() bool {
+	return len(batch.items) == batch.size
 }
 
-func (batch *CacheBatch) Empty() bool {
+func (batch *CacheBatchLoader) Empty() bool {
 	return len(batch.items) == 0
 }
 
-func (batch *CacheBatch) Commit(out rx.OutStream) {
+func (batch *CacheBatchLoader) Commit(out rx.OutStream) {
 	items, err := memcache.GetMulti(batch.context, batch.ids)
 
 	if err != nil {
@@ -46,6 +48,7 @@ func (batch *CacheBatch) Commit(out rx.OutStream) {
 
 	// In case of cache misses, send entities
 	// downstream to be handled by the next transformer
+	batch.ids = []string{}
 	if !batch.Empty() {
 		for id, item := range batch.items {
 			out <- item.Entity
@@ -54,7 +57,7 @@ func (batch *CacheBatch) Commit(out rx.OutStream) {
 	}
 }
 
-func (batch *CacheBatch) Add(data rx.T) {
+func (batch *CacheBatchLoader) Add(data rx.T) {
 	if cacheable, ok := data.(Cacheable); ok {
 		entity := cacheable.(Entity)
 		batch.ids = append(batch.ids, cacheable.CacheID())

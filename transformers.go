@@ -28,8 +28,8 @@ func (builder *transformersBuilder) ResolveEntityKey(context appengine.Context) 
 	}
 }
 
-func (builder *transformersBuilder) LoadEntitiesFromCacheInBatch(context appengine.Context) *observer {
-	batch := NewCacheBatch(context)
+func (builder *transformersBuilder) LoadEntitiesFromCache(context appengine.Context) *observer {
+	batch := NewCacheBatchLoaderWithSize(context, 1000)
 	return &observer{
 		context: builder.context,
 
@@ -63,8 +63,8 @@ func (builder *transformersBuilder) LoadEntitiesFromCacheInBatch(context appengi
 	}
 }
 
-func (builder *transformersBuilder) LookupEntitiesFromDatastoreInBatch(context appengine.Context) *observer {
-	batch := NewDatastoreBatch(context)
+func (builder *transformersBuilder) LookupEntitiesFromDatastore(context appengine.Context) *observer {
+	batch := NewDatastoreBatchLoaderWithSize(context, 1000)
 	return &observer{
 		context: builder.context,
 
@@ -113,6 +113,70 @@ func (builder *transformersBuilder) QueryEntityFromDatastore(context appengine.C
 
 			entity.SetKey(key)
 			return false
+		},
+	}
+}
+
+func (builder *transformersBuilder) UpdateEntitiesInDatastore(context appengine.Context) *observer {
+	batch := NewDatastoreBatchSaverWithSize(context, 500)
+	return &observer{
+		context: builder.context,
+
+		onComplete: func(out rx.OutStream) {
+			batch.Commit(out)
+		},
+
+		onData: func(data rx.T, out rx.OutStream) {
+			entity, ok := data.(Entity)
+			if !ok {
+				out <- data
+				return
+			}
+
+			if !entity.HasKey() {
+				out <- data
+				return
+			}
+
+			batch.Add(data)
+			if batch.Full() {
+				batch.Commit(out)
+			}
+		},
+	}
+}
+
+func (builder *transformersBuilder) UpdateEntitiesInCache(context appengine.Context) *observer {
+	batch := NewCacheBatchSetterWithSize(context, 500)
+	return &observer{
+		context: builder.context,
+
+		onComplete: func(out rx.OutStream) {
+			batch.Commit(out)
+		},
+
+		onData: func(data rx.T, out rx.OutStream) {
+			entity, ok := data.(Entity)
+			if !ok {
+				out <- data
+				return
+			}
+
+			cacheable, ok := data.(Cacheable)
+			if !ok {
+				out <- data
+				return
+			}
+
+			if cacheable.CacheID() == "" {
+				out <- entity
+				return
+			}
+
+			batch.Add(data)
+			if batch.Full() {
+				batch.Commit(out)
+			}
 		},
 	}
 }
