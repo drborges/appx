@@ -1,8 +1,8 @@
 package appx_test
 
 import (
-	"github.com/drborges/appxv2"
 	"appengine/datastore"
+	"github.com/drborges/appxv2"
 )
 
 type Entity struct {
@@ -21,12 +21,36 @@ type User struct {
 	keySpec *appx.KeySpec
 }
 
+func NewUserWithParent(user User) *User {
+	return &User{
+		Name:  user.Name,
+		Email: user.Email,
+		keySpec: &appx.KeySpec{
+			Kind:      "Users",
+			StringID:  user.Name,
+			HasParent: true,
+		},
+	}
+}
+
+func NewUser(user User) *User {
+	return &User{
+		Name:  user.Name,
+		Email: user.Email,
+		keySpec: &appx.KeySpec{
+			Kind:      "Users",
+			StringID:  user.Name,
+			HasParent: false,
+		},
+	}
+}
+
 func (user *User) KeySpec() *appx.KeySpec {
 	return user.keySpec
 }
 
 func (user *User) CacheID() string {
-	return user.keySpec.StringID
+	return user.Email
 }
 
 func (user *User) Query() *datastore.Query {
