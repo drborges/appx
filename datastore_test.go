@@ -2,10 +2,12 @@ package appx_test
 
 import (
 	"appengine/aetest"
+	"appengine/datastore"
 	"appengine/memcache"
 	"github.com/drborges/appxv2"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
+	"time"
 )
 
 func TestDatastoreLoad(t *testing.T) {
@@ -34,7 +36,7 @@ func TestDatastoreLoad(t *testing.T) {
 
 		Convey("When I load it with appx datastore", func() {
 			userFromCache := NewUser(User{
-				Email:   "drborges.cic@gmail.com",
+				Email: "drborges.cic@gmail.com",
 			})
 
 			err := appx.NewDatastore(context).Load(userFromCache)
@@ -47,20 +49,41 @@ func TestDatastoreLoad(t *testing.T) {
 		})
 	})
 
-	Convey("Given I have a lookupable entity", t, func() {
+	Convey("Given I have a queriable entity", t, func() {
+		datastore.Put(context, user.Key(), user)
+
+		// Give datastore some time to index the data before querying
+		time.Sleep(200 * time.Millisecond)
+
 		Convey("When I load it with appx datastore", func() {
-			appx.NewDatastore(context)
+			userFromDatastore := NewUser(User{
+				Email: "drborges.cic@gmail.com",
+			})
+
+			err := appx.NewDatastore(context).Load(userFromDatastore)
 
 			Convey("Then the entity data is properly loaded", func() {
+				So(err, ShouldBeNil)
+				So(userFromDatastore.Name, ShouldEqual, user.Name)
+				So(userFromDatastore.Key(), ShouldResemble, user.Key())
 			})
 		})
 	})
 
-	Convey("Given I have a queriable entity", t, func() {
+	Convey("Given I have a lookupable entity", t, func() {
+		datastore.Put(context, user.Key(), user)
+
 		Convey("When I load it with appx datastore", func() {
-			appx.NewDatastore(context)
+			userFromDatastore := NewUser(User{
+				Name: "Borges",
+			})
+
+			err := appx.NewDatastore(context).Load(userFromDatastore)
 
 			Convey("Then the entity data is properly loaded", func() {
+				So(err, ShouldBeNil)
+				So(userFromDatastore.Name, ShouldEqual, user.Name)
+				So(userFromDatastore.Key(), ShouldResemble, user.Key())
 			})
 		})
 	})
