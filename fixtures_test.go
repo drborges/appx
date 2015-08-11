@@ -18,6 +18,7 @@ type User struct {
 	appx.Model
 	Name    string
 	Email   string
+	SSN     string
 	keySpec *appx.KeySpec
 }
 
@@ -25,6 +26,7 @@ func NewUserWithParent(user User) *User {
 	return &User{
 		Name:  user.Name,
 		Email: user.Email,
+		SSN: user.SSN,
 		keySpec: &appx.KeySpec{
 			Kind:      "Users",
 			StringID:  user.Name,
@@ -37,6 +39,7 @@ func NewUser(user User) *User {
 	return &User{
 		Name:  user.Name,
 		Email: user.Email,
+		SSN: user.SSN,
 		keySpec: &appx.KeySpec{
 			Kind:      "Users",
 			StringID:  user.Name,
@@ -50,7 +53,7 @@ func (user *User) KeySpec() *appx.KeySpec {
 }
 
 func (user *User) CacheID() string {
-	return user.Email
+	return user.SSN
 }
 
 func (user *User) Query() *datastore.Query {

@@ -17,6 +17,7 @@ func TestDatastoreLoad(t *testing.T) {
 	user := NewUser(User{
 		Name:  "Borges",
 		Email: "drborges.cic@gmail.com",
+		SSN:   "123123123",
 	})
 
 	appx.NewKeyManager(context).Resolve(user)
@@ -36,14 +37,16 @@ func TestDatastoreLoad(t *testing.T) {
 
 		Convey("When I load it with appx datastore", func() {
 			userFromCache := NewUser(User{
-				Email: "drborges.cic@gmail.com",
+				SSN: user.SSN,
 			})
 
 			err := appx.NewDatastore(context).Load(userFromCache)
 
 			Convey("Then the entity data is properly loaded", func() {
 				So(err, ShouldBeNil)
+				So(userFromCache.SSN, ShouldEqual, user.SSN)
 				So(userFromCache.Name, ShouldEqual, user.Name)
+				So(userFromCache.Email, ShouldEqual, user.Email)
 				So(userFromCache.Key(), ShouldResemble, user.Key())
 			})
 		})
@@ -57,14 +60,16 @@ func TestDatastoreLoad(t *testing.T) {
 
 		Convey("When I load it with appx datastore", func() {
 			userFromDatastore := NewUser(User{
-				Email: "drborges.cic@gmail.com",
+				SSN: user.SSN,
 			})
 
 			err := appx.NewDatastore(context).Load(userFromDatastore)
 
 			Convey("Then the entity data is properly loaded", func() {
 				So(err, ShouldBeNil)
+				So(userFromDatastore.SSN, ShouldEqual, user.SSN)
 				So(userFromDatastore.Name, ShouldEqual, user.Name)
+				So(userFromDatastore.Email, ShouldEqual, user.Email)
 				So(userFromDatastore.Key(), ShouldResemble, user.Key())
 			})
 		})
@@ -82,8 +87,59 @@ func TestDatastoreLoad(t *testing.T) {
 
 			Convey("Then the entity data is properly loaded", func() {
 				So(err, ShouldBeNil)
+				So(userFromDatastore.SSN, ShouldEqual, user.SSN)
 				So(userFromDatastore.Name, ShouldEqual, user.Name)
+				So(userFromDatastore.Email, ShouldEqual, user.Email)
 				So(userFromDatastore.Key(), ShouldResemble, user.Key())
+			})
+		})
+	})
+}
+
+func TestDatastoreUpdateAll(t *testing.T) {
+	context, _ := aetest.NewContext(nil)
+	defer context.Close()
+
+	Convey("Given I have an entity in datastore", t, func() {
+		user1 := NewUser(User{
+			Name:  "Borges",
+			Email: "borges@email.com",
+			SSN: "123123123",
+		})
+
+		appx.NewKeyManager(context).Resolve(user1)
+		datastore.Put(context, user1.Key(), user1)
+
+		Convey("And I have an entity not yet saved to datastore", func() {
+			user2 := NewUser(User{
+				Name:  "Diego",
+				Email: "diego@email.com",
+				SSN: "321321321",
+			})
+
+			Convey("When I update the entities in datastore", func() {
+				err := appx.NewDatastore(context).UpdateAll(user1, user2)
+
+				Convey("Then the entities are updated in the datastore", func() {
+					So(err, ShouldBeNil)
+					user1FromDatastore := &User{}
+					user2FromDatastore := &User{}
+					user1FromDatastore.SetKey(user1.Key())
+					user2FromDatastore.SetKey(user2.Key())
+
+					datastore.Get(context, user1.Key(), user1FromDatastore)
+					datastore.Get(context, user2.Key(), user2FromDatastore)
+
+					So(user1FromDatastore.SSN, ShouldEqual, user1.SSN)
+					So(user1FromDatastore.Name, ShouldEqual, user1.Name)
+					So(user1FromDatastore.Email, ShouldEqual, user1.Email)
+					So(user1FromDatastore.Key(), ShouldResemble, user1.Key())
+
+					So(user2FromDatastore.SSN, ShouldEqual, user2.SSN)
+					So(user2FromDatastore.Name, ShouldEqual, user2.Name)
+					So(user2FromDatastore.Email, ShouldEqual, user2.Email)
+					So(user2FromDatastore.Key(), ShouldResemble, user2.Key())
+				})
 			})
 		})
 	})

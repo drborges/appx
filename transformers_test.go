@@ -73,6 +73,7 @@ func TestLoadEntityFromCache(t *testing.T) {
 	cachedUser := NewUserWithParent(User{
 		Name:  "Borges",
 		Email: "drborges.cic@gmail.com",
+		SSN:   "123123123",
 	})
 
 	cachedUser.SetParentKey(datastore.NewKey(gaeCtx, "Parent", "parent id", 0, nil))
@@ -98,7 +99,7 @@ func TestLoadEntityFromCache(t *testing.T) {
 				notCacheable := &Entity{}
 				userNotCached := NewUser(User{})
 				userFromCache := NewUser(User{
-					Email: cachedUser.Email,
+					SSN: cachedUser.SSN,
 				})
 
 				in, out := rx.NewStream(3)
@@ -117,6 +118,7 @@ func TestLoadEntityFromCache(t *testing.T) {
 					So(opened, ShouldBeFalse)
 
 					Convey("And all cached entities are loaded", func() {
+						So(userFromCache.SSN, ShouldEqual, cachedUser.SSN)
 						So(userFromCache.Name, ShouldEqual, cachedUser.Name)
 						So(userFromCache.Email, ShouldEqual, cachedUser.Email)
 						So(userFromCache.Key(), ShouldResemble, cachedUser.Key())
@@ -135,6 +137,7 @@ func TestLookupEntityFromDatastore(t *testing.T) {
 	user := NewUserWithParent(User{
 		Name:  "Borges",
 		Email: "drborges.cic@gmail.com",
+		SSN:   "123123123",
 	})
 
 	parentKey := datastore.NewKey(gaeCtx, "Parent", "parent id", 0, nil)
@@ -146,7 +149,9 @@ func TestLookupEntityFromDatastore(t *testing.T) {
 
 		Convey("When I transform the inbound stream with entities that cannot be looked up", func() {
 			userMissingKey := &User{}
-			nonExistentUser := NewUser(User{Name: "Borges"})
+			nonExistentUser := NewUser(User{
+				Name: "Borges",
+			})
 			appx.NewKeyManager(gaeCtx).Resolve(nonExistentUser)
 
 			in, out := rx.NewStream(2)
@@ -199,6 +204,7 @@ func TestLookupEntityFromDatastore(t *testing.T) {
 					So(opened, ShouldBeFalse)
 
 					Convey("And all existent entities are loaded", func() {
+						So(userFromDatastore.SSN, ShouldEqual, user.SSN)
 						So(userFromDatastore.Name, ShouldEqual, user.Name)
 						So(userFromDatastore.Email, ShouldEqual, user.Email)
 						So(userFromDatastore.Key(), ShouldResemble, user.Key())
@@ -217,6 +223,7 @@ func TestQueryEntityFromDatastore(t *testing.T) {
 	user := &User{
 		Name:  "Borges",
 		Email: "diego@email.com",
+		SSN:   "123123123",
 		keySpec: &appx.KeySpec{
 			Kind:     "Users",
 			StringID: "borges",
@@ -369,11 +376,13 @@ func TestUpdateEntitiesInCache(t *testing.T) {
 	cachedUser := NewUserWithParent(User{
 		Name:  "Borges",
 		Email: "drborges.cic@gmail.com",
+		SSN: "123123123",
 	})
 
 	newUser := NewUserWithParent(User{
 		Name:  "Diego",
 		Email: "diego@email.com",
+		SSN: "321321321",
 	})
 
 	cachedUser.SetParentKey(datastore.NewKey(gaeCtx, "Parent", "parent id", 0, nil))
