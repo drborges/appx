@@ -6,7 +6,7 @@ import (
 
 type transformer struct {
 	context   rx.Context
-	transform func(Entity) bool
+	transform func(data rx.T) bool
 }
 
 func (transformer *transformer) Transform(in rx.InStream) rx.InStream {
@@ -26,13 +26,10 @@ func (transformer *transformer) Transform(in rx.InStream) rx.InStream {
 					return
 				}
 
-				if entity, ok := data.(Entity); ok {
-					// If transform returns true we send the entity
-					// downstream so the next transformers have a chance
-					// to transform it
-					if transformer.transform(entity) {
-						writer <- entity
-					}
+				// Send data downstream if there is still
+				// some work to do with the data
+				if transformer.transform(data) {
+					writer <- data
 				}
 			}
 		}
