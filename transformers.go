@@ -2,7 +2,6 @@ package appx
 
 import (
 	"appengine"
-	"appengine/datastore"
 	"github.com/drborges/riversv2/rx"
 )
 
@@ -29,7 +28,7 @@ func (builder *transformersBuilder) ResolveEntityKey(context appengine.Context) 
 	}
 }
 
-func (builder *transformersBuilder) LoadEntityFromCache(context appengine.Context) *observer {
+func (builder *transformersBuilder) LoadEntitiesFromCacheInBatch(context appengine.Context) *observer {
 	batch := NewCacheBatch(context)
 	return &observer{
 		context: builder.context,
@@ -64,29 +63,31 @@ func (builder *transformersBuilder) LoadEntityFromCache(context appengine.Contex
 	}
 }
 
-func (builder *transformersBuilder) LookupEntityFromDatastore(context appengine.Context) *transformer {
-	return &transformer{
+func (builder *transformersBuilder) LookupEntitiesFromDatastoreInBatch(context appengine.Context) *observer {
+	batch := NewDatastoreBatch(context)
+	return &observer{
 		context: builder.context,
-		transform: func(data rx.T) bool {
+
+		onComplete: func(out rx.OutStream) {
+			batch.Commit(out)
+		},
+
+		onData: func(data rx.T, out rx.OutStream) {
 			entity, ok := data.(Entity)
 			if !ok {
-				return false
+				out <- data
+				return
 			}
 
-			// Send entity to the next downstream transformer in
-			// case it is not possible to look it up from datastore
 			if !entity.HasKey() || entity.Key().Incomplete() {
-				return true
+				out <- data
+				return
 			}
 
-			// TODO Consider not panicing on this situation
-			// In case the entity gets to this point with a key and still cannot
-			// be lookuped up, should we move forward downstream?
-			if err := datastore.Get(context, entity.Key(), entity); err != nil {
-				panic(err)
+			batch.Add(data)
+			if batch.Full() {
+				batch.Commit(out)
 			}
-
-			return false
 		},
 	}
 }
