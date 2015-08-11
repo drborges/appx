@@ -3,7 +3,6 @@ package appx
 import (
 	"appengine"
 	"appengine/datastore"
-	"appengine/memcache"
 	"github.com/drborges/riversv2/rx"
 )
 
@@ -30,35 +29,37 @@ func (builder *transformersBuilder) ResolveEntityKey(context appengine.Context) 
 	}
 }
 
-func (builder *transformersBuilder) LoadEntityFromCache(context appengine.Context) *transformer {
-	return &transformer{
+func (builder *transformersBuilder) LoadEntityFromCache(context appengine.Context) *observer {
+	batch := NewCacheBatch(context)
+	return &observer{
 		context: builder.context,
-		transform: func(data rx.T) bool {
+
+		onComplete: func(out rx.OutStream) {
+			batch.Commit(out)
+		},
+
+		onData: func(data rx.T, out rx.OutStream) {
 			entity, ok := data.(Entity)
 			if !ok {
-				return false
+				out <- data
+				return
 			}
 
 			cacheable, ok := data.(Cacheable)
 			if !ok {
-				return true
+				out <- data
+				return
 			}
 
-			cachedEntity := CachedEntity{
-				Entity: entity,
+			if cacheable.CacheID() == "" {
+				out <- entity
+				return
 			}
 
-			_, err := memcache.JSON.Get(context, cacheable.CacheID(), &cachedEntity)
-			if err == memcache.ErrCacheMiss {
-				return true
+			batch.Add(data)
+			if batch.Full() {
+				batch.Commit(out)
 			}
-
-			if err != nil {
-				panic(err)
-			}
-
-			entity.SetKey(cachedEntity.Key)
-			return false
 		},
 	}
 }
