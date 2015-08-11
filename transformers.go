@@ -22,7 +22,7 @@ func (builder *transformersBuilder) ResolveEntityKey(context appengine.Context) 
 				return false
 			}
 
-			NewKeyManager(context).Resolve(entity)
+			NewKeyResolver(context).Resolve(entity)
 			return true
 		},
 	}

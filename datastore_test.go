@@ -20,7 +20,7 @@ func TestDatastoreLoad(t *testing.T) {
 		SSN:   "123123123",
 	})
 
-	appx.NewKeyManager(context).Resolve(user)
+	appx.NewKeyResolver(context).Resolve(user)
 
 	Convey("Given I have a cached entity", t, func() {
 
@@ -107,7 +107,7 @@ func TestDatastoreSaveAll(t *testing.T) {
 			SSN: "123123123",
 		})
 
-		appx.NewKeyManager(context).Resolve(user1)
+		appx.NewKeyResolver(context).Resolve(user1)
 		datastore.Put(context, user1.Key(), user1)
 
 		Convey("And I have an entity not yet saved to datastore", func() {
