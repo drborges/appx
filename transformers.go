@@ -22,6 +22,10 @@ func (builder *transformersBuilder) ResolveEntityKey(context appengine.Context) 
 				return false
 			}
 
+			if entity.HasKey() {
+				return true
+			}
+
 			NewKeyResolver(context).Resolve(entity)
 			return true
 		},

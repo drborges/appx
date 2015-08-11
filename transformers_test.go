@@ -63,6 +63,32 @@ func TestResolveEntityKey(t *testing.T) {
 				})
 			})
 		})
+
+		Convey("When I transform entities with keys already resolved", func() {
+			key1 := datastore.NewKey(gaeCtx, "entity", "123", 0, nil)
+			key2 := datastore.NewKey(gaeCtx, "entity", "", 123, nil)
+			entityWithIncompleteKey.SetKey(key1)
+			entityWithStringID.SetKey(key2)
+
+			in, out := rx.NewStream(3)
+			out <- entityWithIncompleteKey
+			out <- entityWithStringID
+			close(out)
+
+			stream := transformer.Transform(in)
+
+			Convey("Then all entities are sent downstream", func() {
+				So(stream.Read(), ShouldResemble, []rx.T{
+					entityWithIncompleteKey,
+					entityWithStringID,
+				})
+
+				Convey("And entities keys are not replaced", func() {
+					So(entityWithIncompleteKey.Key(), ShouldResemble, key1)
+					So(entityWithStringID.Key(), ShouldResemble, key2)
+				})
+			})
+		})
 	})
 }
 
