@@ -1,14 +1,11 @@
 package appx
 
 type KeySpec struct {
-	Kind      string
-	IntID     int64
-	StringID  string
-	HasParent bool
-}
-
-func (spec *KeySpec) IncompleteKey() bool {
-	return spec.IntID == 0 && spec.StringID == ""
+	Kind       string
+	IntID      int64
+	StringID   string
+	HasParent  bool
+	Incomplete bool
 }
 
 func (spec *KeySpec) Validate(e Entity) error {
@@ -16,7 +13,7 @@ func (spec *KeySpec) Validate(e Entity) error {
 		return ErrMissingEntityKind
 	}
 
-	if spec.IncompleteKey() {
+	if !spec.Incomplete && spec.IntID == 0 && spec.StringID == "" {
 		return ErrIncompleteKey
 	}
 

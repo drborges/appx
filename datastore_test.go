@@ -96,7 +96,7 @@ func TestDatastoreLoad(t *testing.T) {
 	})
 }
 
-func TestDatastoreUpdateAll(t *testing.T) {
+func TestDatastoreSaveAll(t *testing.T) {
 	context, _ := aetest.NewContext(nil)
 	defer context.Close()
 
@@ -118,7 +118,7 @@ func TestDatastoreUpdateAll(t *testing.T) {
 			})
 
 			Convey("When I update the entities in datastore", func() {
-				err := appx.NewDatastore(context).UpdateAll(user1, user2)
+				err := appx.NewDatastore(context).SaveAll(user1, user2)
 
 				Convey("Then the entities are updated in the datastore", func() {
 					So(err, ShouldBeNil)

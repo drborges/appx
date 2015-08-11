@@ -30,11 +30,11 @@ func (datastore *Datastore) LoadAll(entities ...Entity) error {
 	return context.Err()
 }
 
-func (datastore *Datastore) Update(entity Entity) error {
-	return datastore.UpdateAll(entity)
+func (datastore *Datastore) Save(entity Entity) error {
+	return datastore.SaveAll(entity)
 }
 
-func (datastore *Datastore) UpdateAll(entities ...Entity) error {
+func (datastore *Datastore) SaveAll(entities ...Entity) error {
 	context := rivers.NewContext()
 	transformer := NewTransformer(context)
 	rivers.NewWith(context).FromSlice(entities).

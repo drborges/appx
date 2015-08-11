@@ -65,6 +65,22 @@ func TestKeyManager(t *testing.T) {
 			})
 		})
 
+		Convey("When I resolve a key of an entity whose key spec is incomplete", func() {
+			entity := &Entity{
+				keySpec: &appx.KeySpec{
+					Kind:       "People",
+					Incomplete: true,
+				},
+			}
+
+			err := manager.Resolve(entity)
+
+			Convey("Then key is resolved as incomplete", func() {
+				So(err, ShouldBeNil)
+				So(entity.Key().Incomplete(), ShouldBeTrue)
+			})
+		})
+
 		Convey("When I resolve a key of an entity whose key spec is missing kind information", func() {
 			err := manager.Resolve(&Entity{
 				keySpec: &appx.KeySpec{},
@@ -119,8 +135,8 @@ func TestKeyManager(t *testing.T) {
 		Convey("When I assign a key to an entity whose key spec is incomplete", func() {
 			entity := &Entity{
 				keySpec: &appx.KeySpec{
-					Kind:      "Entity",
-					IntID:     123,
+					Kind:  "Entity",
+					IntID: 123,
 				},
 			}
 
