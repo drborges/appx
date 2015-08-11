@@ -118,7 +118,7 @@ func TestDatastoreSaveAll(t *testing.T) {
 			})
 
 			Convey("When I update the entities in datastore", func() {
-				err := appx.NewDatastore(context).SaveAll(user1, user2)
+				err := appx.NewDatastore(context).Save(user1, user2)
 
 				Convey("Then the entities are updated in the datastore", func() {
 					So(err, ShouldBeNil)
@@ -181,7 +181,7 @@ func TestDatastoreDeleteAll(t *testing.T) {
 				nonExistentUser := NewUser(User{Name: "not existent"})
 
 				Convey("When I delete the all", func() {
-					err := appx.NewDatastore(context).DeleteAll(userInDatastore, cachedUser, nonExistentUser)
+					err := appx.NewDatastore(context).Delete(userInDatastore, cachedUser, nonExistentUser)
 
 					Convey("Then the entities are deleted from cache and datastore", func() {
 						So(err, ShouldBeNil)

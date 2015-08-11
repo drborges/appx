@@ -13,11 +13,7 @@ func NewDatastore(context appengine.Context) *Datastore {
 	return &Datastore{context}
 }
 
-func (datastore *Datastore) Load(entity Entity) error {
-	return datastore.LoadAll(entity)
-}
-
-func (datastore *Datastore) LoadAll(entities ...Entity) error {
+func (datastore *Datastore) Load(entities ...Entity) error {
 	context := rivers.NewContext()
 	transformer := NewTransformer(context)
 	rivers.NewWith(context).FromSlice(entities).
@@ -30,11 +26,7 @@ func (datastore *Datastore) LoadAll(entities ...Entity) error {
 	return context.Err()
 }
 
-func (datastore *Datastore) Save(entity Entity) error {
-	return datastore.SaveAll(entity)
-}
-
-func (datastore *Datastore) SaveAll(entities ...Entity) error {
+func (datastore *Datastore) Save(entities ...Entity) error {
 	context := rivers.NewContext()
 	transformer := NewTransformer(context)
 	rivers.NewWith(context).FromSlice(entities).
@@ -46,7 +38,7 @@ func (datastore *Datastore) SaveAll(entities ...Entity) error {
 	return context.Err()
 }
 
-func (datastore *Datastore) DeleteAll(entities ...Entity) error {
+func (datastore *Datastore) Delete(entities ...Entity) error {
 	context := rivers.NewContext()
 	transformer := NewTransformer(context)
 	rivers.NewWith(context).FromSlice(entities).
