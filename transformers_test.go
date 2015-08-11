@@ -80,7 +80,7 @@ func TestLoadEntityFromCache(t *testing.T) {
 
 	Convey("Given I have a load entity from cache transformer", t, func() {
 		riversCtx := rivers.NewContext()
-		loader := appx.NewTransformer(riversCtx).LoadEntityFromCache(gaeCtx)
+		loader := appx.NewTransformer(riversCtx).LoadEntitiesFromCacheInBatch(gaeCtx)
 
 		Convey("And I have a cached entity", func() {
 			cached := appx.CachedEntity{
@@ -142,9 +142,9 @@ func TestLookupEntityFromDatastore(t *testing.T) {
 
 	Convey("Given I have a lookup entity from datastore transformer", t, func() {
 		riversCtx := rivers.NewContext()
-		lookup := appx.NewTransformer(riversCtx).LookupEntityFromDatastore(gaeCtx)
+		lookup := appx.NewTransformer(riversCtx).LookupEntitiesFromDatastoreInBatch(gaeCtx)
 
-		Convey("When I transform the inbound stream with non existent entities", func() {
+		Convey("When I transform the inbound stream with entities that cannot be looked up", func() {
 			userMissingKey := &User{}
 			nonExistentUser := NewUser(User{Name: "Borges"})
 			appx.NewKeyResolver(gaeCtx).Resolve(nonExistentUser)
@@ -157,12 +157,12 @@ func TestLookupEntityFromDatastore(t *testing.T) {
 			stream := lookup.Transform(in)
 
 			Convey("Then no entities are sent downstream ", func() {
-				So(stream.Read(), ShouldBeEmpty)
+				So(stream.Read(), ShouldResemble, []rx.T{userMissingKey})
 
 				Convey("And context is closed with error", func() {
 					_, opened := <-riversCtx.Closed()
 					So(opened, ShouldBeFalse)
-					So(riversCtx.Err(), ShouldEqual, datastore.ErrNoSuchEntity)
+					So(riversCtx.Err().Error(), ShouldResemble, datastore.ErrNoSuchEntity.Error())
 				})
 			})
 		})
