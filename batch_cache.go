@@ -47,3 +47,42 @@ func (batch *BatchCacheSetter) Commit(out rx.OutStream) {
 
 	batch.Items = []*memcache.Item{}
 }
+
+type BatchCacheLoader struct {
+	Size  int
+	Keys []string
+	Items map[string]*CachedEntity
+}
+
+func (batch *BatchCacheLoader) Full() bool {
+	return len(batch.Keys) == batch.Size
+}
+
+func (batch *BatchCacheLoader) Empty() bool {
+	return len(batch.Keys) == 0
+}
+
+func (batch *BatchCacheLoader) Add(data rx.T) {
+	entity := data.(Entity)
+	cacheable := data.(Cacheable)
+
+	if batch.Items == nil {
+		batch.Items = make(map[string]*CachedEntity)
+	}
+
+	batch.Keys = append(batch.Keys, cacheable.CacheID())
+	batch.Items[cacheable.CacheID()] = &CachedEntity{
+		Entity: entity,
+	}
+}
+
+func (batch *BatchCacheLoader) Commit(out rx.OutStream) {
+	out <- &BatchCacheLoader{
+		Size: batch.Size,
+		Keys: batch.Keys,
+		Items: batch.Items,
+	}
+
+	batch.Keys = []string{}
+	batch.Items = make(map[string]*CachedEntity)
+}
