@@ -50,7 +50,7 @@ func (batch *BatchCacheSetter) Commit(out rx.OutStream) {
 
 type BatchCacheLoader struct {
 	Size  int
-	Keys []string
+	Keys  []string
 	Items map[string]*CachedEntity
 }
 
@@ -78,11 +78,38 @@ func (batch *BatchCacheLoader) Add(data rx.T) {
 
 func (batch *BatchCacheLoader) Commit(out rx.OutStream) {
 	out <- &BatchCacheLoader{
-		Size: batch.Size,
-		Keys: batch.Keys,
+		Size:  batch.Size,
+		Keys:  batch.Keys,
 		Items: batch.Items,
 	}
 
 	batch.Keys = []string{}
 	batch.Items = make(map[string]*CachedEntity)
+}
+
+type BatchCacheDeleter struct {
+	Size int
+	Keys []string
+}
+
+func (batch *BatchCacheDeleter) Full() bool {
+	return len(batch.Keys) == batch.Size
+}
+
+func (batch *BatchCacheDeleter) Empty() bool {
+	return len(batch.Keys) == 0
+}
+
+func (batch *BatchCacheDeleter) Add(data rx.T) {
+	cacheable := data.(Cacheable)
+	batch.Keys = append(batch.Keys, cacheable.CacheID())
+}
+
+func (batch *BatchCacheDeleter) Commit(out rx.OutStream) {
+	out <- &BatchCacheDeleter{
+		Size: batch.Size,
+		Keys: batch.Keys,
+	}
+
+	batch.Keys = []string{}
 }
