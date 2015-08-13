@@ -3,6 +3,9 @@ package appx
 import (
 	"appengine"
 	"appengine/datastore"
+	"github.com/drborges/riversv2"
+	"github.com/drborges/riversv2/rx"
+	"reflect"
 )
 
 type runner struct {
@@ -34,4 +37,31 @@ func (runner *runner) ItemsIterator() Iterator {
 
 func (runner *runner) PagesIterator() Iterator {
 	return NewPagesIterator(runner.context, runner.query)
+}
+
+func (runner *runner) StreamOf(dst interface{}) *rivers.Stage {
+	context := rivers.NewContext()
+	pipeline := rivers.NewWith(context)
+	in, out := rx.NewStream(1000)
+
+	go func() {
+		defer context.Recover()
+		defer close(out)
+
+		iter := runner.ItemsIterator()
+		for iter.HasNext() {
+			select {
+			case <-context.Closed():
+				return
+			default:
+				data := reflect.New(reflect.TypeOf(dst)).Interface()
+				if err := iter.LoadNext(data); err != nil {
+					return
+				}
+				out <- data
+			}
+		}
+	}()
+
+	return pipeline.FromStream(in)
 }

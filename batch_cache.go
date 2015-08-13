@@ -4,7 +4,6 @@ import (
 	"appengine/memcache"
 	"encoding/json"
 	"github.com/drborges/riversv2/rx"
-	"log"
 )
 
 type BatchCacheSetter struct {
@@ -23,7 +22,6 @@ func (batch *BatchCacheSetter) Empty() bool {
 func (batch *BatchCacheSetter) Add(data rx.T) {
 	entity := data.(Entity)
 	cacheable := data.(Cacheable)
-	log.Printf("############## adding %+v", cacheable)
 	cachedEntity := &CachedEntity{
 		Entity: entity,
 		Key:    entity.Key(),
@@ -45,8 +43,6 @@ func (batch *BatchCacheSetter) Commit(out rx.OutStream) {
 		Size:  batch.Size,
 		Items: batch.Items,
 	}
-
-	log.Printf("############## committing %+v", batch.Items)
 
 	batch.Items = []*memcache.Item{}
 }

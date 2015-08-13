@@ -6,6 +6,7 @@ import (
 	"github.com/drborges/appxv2"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
+	"github.com/drborges/riversv2/rx"
 )
 
 func TestQuery(t *testing.T) {
@@ -66,6 +67,14 @@ func TestQuery(t *testing.T) {
 				Convey("Then count is 2", func() {
 					So(count, ShouldEqual, 2)
 				})
+			})
+		})
+
+		Convey("When I stream the data", func() {
+			stream := runner.StreamOf(Tag{}).Sink()
+
+			Convey("Then the entities are streammed", func() {
+				So(stream.Read(), ShouldResemble, []rx.T{golang, swift})
 			})
 		})
 	})
