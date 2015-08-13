@@ -42,37 +42,31 @@ func (datastore *Datastore) Load(entities ...Entity) error {
 		notLoadedEntities.Sink(),
 		notQueriedEntities.Sink()).Drain()
 
-	cacheMissesToBeCached.
+	return cacheMissesToBeCached.
 		Filter(step.EntitiesWithNonEmptyCacheIDs).
 		BatchBy(step.MemcacheSaveBatchOf(1000)).
 		Apply(step.SaveMemcacheBatch(datastore.context)).
 		Drain()
-
-	return context.Err()
 }
 
 func (datastore *Datastore) Save(entities ...Entity) error {
 	context := rivers.NewContext()
 	transformer := NewTransformer(context)
-	rivers.NewWith(context).FromSlice(entities).
+	return rivers.NewWith(context).FromSlice(entities).
 		Apply(transformer.ResolveEntityKey2(datastore.context)).
 		Apply(transformer.UpdateEntitiesInDatastore(datastore.context)).
 		Apply(transformer.UpdateEntitiesInCache(datastore.context)).
 		Drain()
-
-	return context.Err()
 }
 
 func (datastore *Datastore) Delete(entities ...Entity) error {
 	context := rivers.NewContext()
 	transformer := NewTransformer(context)
-	rivers.NewWith(context).FromSlice(entities).
+	return rivers.NewWith(context).FromSlice(entities).
 		Apply(transformer.ResolveEntityKey2(datastore.context)).
 		Apply(transformer.DeleteEntitiesFromCache(datastore.context)).
 		Apply(transformer.DeleteEntitiesFromDatastore(datastore.context)).
 		Drain()
-
-	return context.Err()
 }
 
 func (datastore *Datastore) Query(q *datastore.Query) *runner {
