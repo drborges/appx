@@ -19,8 +19,8 @@ func TestQuery(t *testing.T) {
 	createAll(c, golang, swift, ruby)
 
 	Convey("Given I have a QueryRunner", t, func() {
-		q := datastore.NewQuery(new(Tag).KeySpec().Kind).Filter("Owner=", "Borges")
-		runner := appx.NewDatastore(c).Query(q)
+		byOwner := datastore.NewQuery(new(Tag).KeySpec().Kind).Filter("Owner=", "Borges")
+		runner := appx.NewDatastore(c).Query(byOwner)
 
 		Convey("When I run Results", func() {
 			result := []*Tag{}

@@ -2,7 +2,9 @@ package appx
 
 import (
 	"appengine"
+	"appengine/datastore"
 	"appengine/memcache"
+	"encoding/json"
 	"github.com/drborges/riversv2/rx"
 )
 
@@ -14,7 +16,106 @@ func NewTransformer(context rx.Context) *transformersBuilder {
 	return &transformersBuilder{context}
 }
 
-func (builder *transformersBuilder) ResolveEntityKey(context appengine.Context) *transformer {
+func (builder *transformersBuilder) CacheableWithNonEmptyCacheKey(data rx.T) bool {
+	cacheable, ok := data.(Cacheable)
+	return ok && cacheable.CacheID() != ""
+}
+
+func (builder *transformersBuilder) ResolvedKeys(data rx.T) bool {
+	entity, _ := data.(Entity)
+	return entity.HasKey()
+}
+
+func (builder *transformersBuilder) EntitiesWithNonEmptyCacheIDs(data rx.T) bool {
+	cacheable, _ := data.(Cacheable)
+	return cacheable.CacheID() != ""
+}
+
+func (builder *transformersBuilder) ResolveEntityKey(context appengine.Context) rx.MapFn {
+	return func(data rx.T) rx.T {
+		entity := data.(Entity)
+		NewKeyResolver(context).Resolve(entity)
+		return entity
+	}
+}
+
+func (builder *transformersBuilder) MemcacheLoadBatchOf(size int) rx.Batch {
+	return &BatchCacheLoader{
+		Size:  size,
+		Items: make(map[string]*CachedEntity),
+	}
+}
+
+func (builder *transformersBuilder) MemcacheSaveBatchOf(size int) rx.Batch {
+	return &BatchCacheSetter{
+		Size:  size,
+		Items: []*memcache.Item{},
+	}
+}
+
+func (builder *transformersBuilder) DatastoreBatchOf(size int) rx.Batch {
+	return &BatchDatastore{Size: size}
+}
+
+func (builder *transformersBuilder) SaveMemcacheBatch(context appengine.Context) *observer {
+	return &observer {
+		context: builder.context,
+		onComplete: func(out rx.OutStream) {},
+		onData: func(data rx.T, out rx.OutStream) {
+			batch := data.(*BatchCacheSetter)
+			if err := memcache.SetMulti(context, batch.Items); err != nil {
+				panic(err)
+			}
+		},
+	}
+}
+
+func (builder *transformersBuilder) LoadBatchFromCache(context appengine.Context) *observer {
+	return &observer{
+		context:    builder.context,
+		onComplete: func(out rx.OutStream) {},
+		onData: func(data rx.T, out rx.OutStream) {
+			batch := data.(*BatchCacheLoader)
+			items, err := memcache.GetMulti(context, batch.Keys)
+
+			if err != nil {
+				panic(err)
+			}
+
+			for id, item := range items {
+				if err := json.Unmarshal(item.Value, batch.Items[id]); err != nil {
+					panic(err)
+				}
+				// Set entity key back
+				batch.Items[id].Entity.SetKey(batch.Items[id].Key)
+				delete(batch.Items, id)
+			}
+
+			// In case of cache misses, send entities
+			// downstream to be handled by the next transformer
+			if !batch.Empty() {
+				for _, item := range batch.Items {
+					out <- item.Entity
+				}
+			}
+		},
+	}
+}
+
+func (builder *transformersBuilder) LoadBatchFromDatastore(context appengine.Context) *observer {
+	return &observer{
+		context:    builder.context,
+		onComplete: func(out rx.OutStream) {},
+		onData: func(data rx.T, out rx.OutStream) {
+			batch := data.(*BatchDatastore)
+			if err := datastore.GetMulti(context, batch.Keys, batch.Items); err != nil {
+				panic(err)
+			}
+		},
+	}
+}
+
+func (builder *transformersBuilder) ResolveEntityKey2(context appengine.Context) *transformer {
 	return &transformer{
 		context: builder.context,
 		transform: func(data rx.T) bool {
@@ -29,78 +130,6 @@ func (builder *transformersBuilder) ResolveEntityKey(context appengine.Context) 
 
 			NewKeyResolver(context).Resolve(entity)
 			return true
-		},
-	}
-}
-
-func (builder *transformersBuilder) LoadEntitiesFromCache(context appengine.Context) *observer {
-	batch := &cacheBatchLoader{
-		context: context,
-		size:    1000,
-		items:   make(map[string]*CachedEntity),
-	}
-
-	return &observer{
-		context: builder.context,
-
-		onComplete: func(out rx.OutStream) {
-			batch.Commit(out)
-		},
-
-		onData: func(data rx.T, out rx.OutStream) {
-			entity, ok := data.(Entity)
-			if !ok {
-				out <- data
-				return
-			}
-
-			cacheable, ok := data.(Cacheable)
-			if !ok {
-				out <- data
-				return
-			}
-
-			if cacheable.CacheID() == "" {
-				out <- entity
-				return
-			}
-
-			batch.Add(data)
-			if batch.Full() {
-				batch.Commit(out)
-			}
-		},
-	}
-}
-
-func (builder *transformersBuilder) LookupEntitiesFromDatastore(context appengine.Context) *observer {
-	batch := &datastoreBatchLoader{}
-	batch.context = context
-	batch.size = 1000
-
-	return &observer{
-		context: builder.context,
-
-		onComplete: func(out rx.OutStream) {
-			batch.Commit(out)
-		},
-
-		onData: func(data rx.T, out rx.OutStream) {
-			entity, ok := data.(Entity)
-			if !ok {
-				out <- data
-				return
-			}
-
-			if !entity.HasKey() || entity.Key().Incomplete() {
-				out <- data
-				return
-			}
-
-			batch.Add(data)
-			if batch.Full() {
-				batch.Commit(out)
-			}
 		},
 	}
 }

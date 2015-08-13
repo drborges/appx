@@ -59,3 +59,45 @@ func (batch *cacheBatchLoader) Add(data rx.T) {
 		}
 	}
 }
+
+type CacheBatchLoad struct {
+	Size int
+	Keys []string
+	Items map[string]*CachedEntity
+}
+
+func NewCacheBatchLoad(size int) *CacheBatchLoad {
+	return &CacheBatchLoad{
+		Size: size,
+		Items: make(map[string]*CachedEntity),
+	}
+}
+
+func (batch *CacheBatchLoad) Full() bool {
+	return len(batch.Items) == batch.Size
+}
+
+func (batch *CacheBatchLoad) Empty() bool {
+	return len(batch.Items) == 0
+}
+
+func (batch *CacheBatchLoad) Commit(out rx.OutStream) {
+	out <- &CacheBatchLoad{
+		Size: batch.Size,
+		Keys: batch.Keys,
+		Items: batch.Items,
+	}
+
+	batch.Keys = []string{}
+	batch.Items = make(map[string]*CachedEntity)
+}
+
+func (batch *CacheBatchLoad) Add(data rx.T) {
+	entity := data.(Entity)
+	cacheable := data.(Cacheable)
+
+	batch.Keys = append(batch.Keys, cacheable.CacheID())
+	batch.Items[cacheable.CacheID()] = &CachedEntity{
+		Entity: entity,
+	}
+}

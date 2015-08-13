@@ -82,22 +82,22 @@ func TestLoadMultiEntityKind(t *testing.T) {
 
 	Convey("Given I have users and devices in datastore", t, func() {
 		user1 := NewUser(User{
-			Name: "borges",
+			Name:  "borges",
 			Email: "borges@email.com",
 		})
 
 		user2 := NewUser(User{
-			Name: "diego",
+			Name:  "diego",
 			Email: "diego@email.com",
 		})
 
 		device1 := &Device{
-			ID: 1,
+			ID:    1,
 			Owner: "borges",
 		}
 
 		device2 := &Device{
-			ID: 2,
+			ID:    2,
 			Owner: "diego",
 		}
 
@@ -106,10 +106,10 @@ func TestLoadMultiEntityKind(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		Convey("When I load them all with appx", func() {
-			user1FromDatastore := NewUser(User{Name:"borges"})
-			user2FromDatastore := NewUser(User{Name:"diego"})
-			device1FromDatastore := &Device{ID:1}
-			device2FromDatastore := &Device{ID:2}
+			user1FromDatastore := NewUser(User{Name: "borges"})
+			user2FromDatastore := NewUser(User{Name: "diego"})
+			device1FromDatastore := &Device{ID: 1}
+			device2FromDatastore := &Device{ID: 2}
 
 			err := db.Load(
 				user1FromDatastore,
