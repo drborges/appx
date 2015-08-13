@@ -8,21 +8,21 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 	"time"
+	"encoding/json"
 )
 
 func TestDatastoreLoad(t *testing.T) {
 	context, _ := aetest.NewContext(nil)
 	defer context.Close()
 
-	user := NewUser(User{
-		Name:  "Borges",
-		Email: "drborges.cic@gmail.com",
-		SSN:   "123123123",
-	})
-
-	appx.NewKeyResolver(context).Resolve(user)
-
 	Convey("Given I have a cached entity", t, func() {
+		user := NewUser(User{
+			Name:  "Borges",
+			Email: "drborges.cic@gmail.com",
+			SSN:   "123123123",
+		})
+
+		appx.NewKeyResolver(context).Resolve(user)
 
 		cached := appx.CachedEntity{
 			Entity:    user,
@@ -53,6 +53,14 @@ func TestDatastoreLoad(t *testing.T) {
 	})
 
 	Convey("Given I have a queriable entity", t, func() {
+		user := NewUser(User{
+			Name:  "Borges",
+			Email: "drborges.cic@gmail.com",
+			SSN:   "321321",
+		})
+
+		appx.NewKeyResolver(context).Resolve(user)
+
 		datastore.Put(context, user.Key(), user)
 
 		// Give datastore some time to index the data before querying
@@ -60,7 +68,8 @@ func TestDatastoreLoad(t *testing.T) {
 
 		Convey("When I load it with appx datastore", func() {
 			userFromDatastore := NewUser(User{
-				SSN: user.SSN,
+				Email: user.Email,
+				SSN: "321321",
 			})
 
 			err := appx.NewDatastore(context).Load(userFromDatastore)
@@ -71,11 +80,30 @@ func TestDatastoreLoad(t *testing.T) {
 				So(userFromDatastore.Name, ShouldEqual, user.Name)
 				So(userFromDatastore.Email, ShouldEqual, user.Email)
 				So(userFromDatastore.Key(), ShouldResemble, user.Key())
+
+				Convey("And the entity is cached in case it is cacheable", func() {
+					userFromCache := NewUser(User{Name: "Borges"})
+					cached := appx.CachedEntity{
+						Entity: userFromCache,
+					}
+					item, err := memcache.Get(context, user.CacheID())
+					json.Unmarshal(item.Value, &cached)
+					appx.NewKeyResolver(context).Resolve(userFromCache)
+					So(err, ShouldBeNil)
+					So(userFromCache, ShouldResemble, user)
+				})
 			})
 		})
 	})
 
 	Convey("Given I have a lookupable entity", t, func() {
+		user := NewUser(User{
+			Name:  "Borges",
+			Email: "drborges.cic@gmail.com",
+			SSN:   "987987",
+		})
+
+		appx.NewKeyResolver(context).Resolve(user)
 		datastore.Put(context, user.Key(), user)
 
 		Convey("When I load it with appx datastore", func() {
@@ -91,12 +119,17 @@ func TestDatastoreLoad(t *testing.T) {
 				So(userFromDatastore.Name, ShouldEqual, user.Name)
 				So(userFromDatastore.Email, ShouldEqual, user.Email)
 				So(userFromDatastore.Key(), ShouldResemble, user.Key())
+
+				Convey("And the entity is not cached if its cache id is empty", func() {
+					_, err := memcache.Get(context, user.CacheID())
+					So(err, ShouldEqual, memcache.ErrCacheMiss)
+				})
 			})
 		})
 	})
 }
 
-func TestDatastoreSaveAll(t *testing.T) {
+func TestDatastoreSave(t *testing.T) {
 	context, _ := aetest.NewContext(nil)
 	defer context.Close()
 
@@ -145,7 +178,7 @@ func TestDatastoreSaveAll(t *testing.T) {
 	})
 }
 
-func TestDatastoreDeleteAll(t *testing.T) {
+func TestDatastoreDelete(t *testing.T) {
 	context, _ := aetest.NewContext(nil)
 	defer context.Close()
 

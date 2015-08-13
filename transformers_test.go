@@ -38,7 +38,7 @@ func TestResolveEntityKey(t *testing.T) {
 
 	Convey("Given I have a resolve entity key transformer", t, func() {
 		riversCtx := rivers.NewContext()
-		transformer := appx.NewTransformer(riversCtx).ResolveEntityKey(gaeCtx)
+		transformer := appx.NewTransformer(riversCtx).ResolveEntityKey2(gaeCtx)
 
 		Convey("When I transform entities with valid key spec from the inbound stream", func() {
 			in, out := rx.NewStream(3)
@@ -86,156 +86,6 @@ func TestResolveEntityKey(t *testing.T) {
 				Convey("And entities keys are not replaced", func() {
 					So(entityWithIncompleteKey.Key(), ShouldResemble, key1)
 					So(entityWithStringID.Key(), ShouldResemble, key2)
-				})
-			})
-		})
-	})
-}
-
-func TestLoadEntitiesFromCache(t *testing.T) {
-	gaeCtx, _ := aetest.NewContext(nil)
-	defer gaeCtx.Close()
-
-	cachedUser := NewUserWithParent(User{
-		Name:  "Borges",
-		Email: "drborges.cic@gmail.com",
-		SSN:   "123123123",
-	})
-
-	cachedUser.SetParentKey(datastore.NewKey(gaeCtx, "Parent", "parent id", 0, nil))
-	appx.NewKeyResolver(gaeCtx).Resolve(cachedUser)
-
-	Convey("Given I have a load entity from cache transformer", t, func() {
-		riversCtx := rivers.NewContext()
-		transformer := appx.NewTransformer(riversCtx).LoadEntitiesFromCache(gaeCtx)
-
-		Convey("And I have a cached entity", func() {
-			cached := appx.CachedEntity{
-				Entity:    cachedUser,
-				Key:       cachedUser.Key(),
-				ParentKey: cachedUser.ParentKey(),
-			}
-
-			memcache.JSON.Set(gaeCtx, &memcache.Item{
-				Key:    cachedUser.CacheID(),
-				Object: cached,
-			})
-
-			Convey("When I transform the inbound entity stream", func() {
-				notCacheable := &Entity{}
-				userNotCached := NewUser(User{})
-				userFromCache := NewUser(User{
-					SSN: cachedUser.SSN,
-				})
-
-				in, out := rx.NewStream(3)
-				out <- userFromCache
-				out <- userNotCached
-				out <- notCacheable
-				close(out)
-
-				stream := transformer.Transform(in)
-
-				Convey("Then non cached entities are sent downstream", func() {
-					So(<-stream, ShouldEqual, userNotCached)
-					So(<-stream, ShouldEqual, notCacheable)
-
-					_, opened := <-stream
-					So(opened, ShouldBeFalse)
-
-					Convey("And all cached entities are loaded", func() {
-						So(userFromCache.SSN, ShouldEqual, cachedUser.SSN)
-						So(userFromCache.Name, ShouldEqual, cachedUser.Name)
-						So(userFromCache.Email, ShouldEqual, cachedUser.Email)
-						So(userFromCache.Key(), ShouldResemble, cachedUser.Key())
-						So(userFromCache.ParentKey(), ShouldResemble, cachedUser.ParentKey())
-					})
-				})
-			})
-		})
-	})
-}
-
-func TestLookupEntitiesFromDatastore(t *testing.T) {
-	gaeCtx, _ := aetest.NewContext(nil)
-	defer gaeCtx.Close()
-
-	user := NewUserWithParent(User{
-		Name:  "Borges",
-		Email: "drborges.cic@gmail.com",
-		SSN:   "123123123",
-	})
-
-	parentKey := datastore.NewKey(gaeCtx, "Parent", "parent id", 0, nil)
-	user.SetParentKey(parentKey)
-
-	Convey("Given I have a lookup entity from datastore transformer", t, func() {
-		riversCtx := rivers.NewContext()
-		transformer := appx.NewTransformer(riversCtx).LookupEntitiesFromDatastore(gaeCtx)
-
-		Convey("When I transform the inbound stream with entities that cannot be looked up", func() {
-			userMissingKey := &User{}
-			nonExistentUser := NewUser(User{
-				Name: "Borges",
-			})
-			appx.NewKeyResolver(gaeCtx).Resolve(nonExistentUser)
-
-			in, out := rx.NewStream(2)
-			out <- nonExistentUser
-			out <- userMissingKey
-			close(out)
-
-			stream := transformer.Transform(in)
-
-			Convey("Then no entities are sent downstream ", func() {
-				So(stream.Read(), ShouldResemble, []rx.T{userMissingKey})
-
-				Convey("And context is closed with error", func() {
-					_, opened := <-riversCtx.Closed()
-					So(opened, ShouldBeFalse)
-					So(riversCtx.Err().Error(), ShouldResemble, datastore.ErrNoSuchEntity.Error())
-				})
-			})
-		})
-
-		Convey("And I have an entity in datastore", func() {
-			err := appx.NewKeyResolver(gaeCtx).Resolve(user)
-			So(err, ShouldBeNil)
-
-			_, err = datastore.Put(gaeCtx, user.Key(), user)
-			So(err, ShouldBeNil)
-
-			Convey("When I transform the inbound entity stream", func() {
-				userFromDatastore := NewUserWithParent(User{Name: "Borges"})
-				userFromDatastore.SetParentKey(parentKey)
-				appx.NewKeyResolver(gaeCtx).Resolve(userFromDatastore)
-
-				userMissingKey := NewUser(User{})
-				userWithIncompleteKey := NewUser(User{})
-				userWithIncompleteKey.SetKey(datastore.NewIncompleteKey(gaeCtx, "Users", nil))
-
-				in, out := rx.NewStream(3)
-				out <- userFromDatastore
-				out <- userMissingKey
-				out <- userWithIncompleteKey
-				close(out)
-
-				stream := transformer.Transform(in)
-
-				Convey("Then non existent entities are sent downstream", func() {
-					So(<-stream, ShouldResemble, userMissingKey)
-					So(<-stream, ShouldResemble, userWithIncompleteKey)
-
-					_, opened := <-stream
-					So(opened, ShouldBeFalse)
-
-					Convey("And all existent entities are loaded", func() {
-						So(userFromDatastore.SSN, ShouldEqual, user.SSN)
-						So(userFromDatastore.Name, ShouldEqual, user.Name)
-						So(userFromDatastore.Email, ShouldEqual, user.Email)
-						So(userFromDatastore.Key(), ShouldResemble, user.Key())
-						So(userFromDatastore.ParentKey(), ShouldResemble, user.ParentKey())
-					})
 				})
 			})
 		})
@@ -407,13 +257,13 @@ func TestUpdateEntitiesInCache(t *testing.T) {
 	cachedUser := NewUserWithParent(User{
 		Name:  "Borges",
 		Email: "drborges.cic@gmail.com",
-		SSN: "123123123",
+		SSN:   "123123123",
 	})
 
 	newUser := NewUserWithParent(User{
 		Name:  "Diego",
 		Email: "diego@email.com",
-		SSN: "321321321",
+		SSN:   "321321321",
 	})
 
 	cachedUser.SetParentKey(datastore.NewKey(gaeCtx, "Parent", "parent id", 0, nil))

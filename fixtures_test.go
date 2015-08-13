@@ -48,6 +48,21 @@ func NewUser(user User) *User {
 	}
 }
 
+func NewUserWithFakeKey(user User) *User {
+	u := &User{
+		Name:  user.Name,
+		Email: user.Email,
+		SSN:   user.SSN,
+		keySpec: &appx.KeySpec{
+			Kind:      "Users",
+			StringID:  user.Name,
+			HasParent: false,
+		},
+	}
+	u.SetKey(&datastore.Key{})
+	return u
+}
+
 func (user *User) KeySpec() *appx.KeySpec {
 	return user.keySpec
 }

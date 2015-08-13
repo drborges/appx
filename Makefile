@@ -1,5 +1,5 @@
 test:
-	go test ./... -v
+	go test ./... -run=$(grep) -v
 build:
 	go build ./...
 update:
