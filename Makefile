@@ -1,6 +1,6 @@
 test:
-	go test ./... -run=$(grep) -v
+	goapp test ./... -v -run=$(grep)
 build:
-	go build ./...
+	goapp build ./...
 update:
 	goapp get -u ./... -v

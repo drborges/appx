@@ -3,7 +3,7 @@ package appx_test
 import (
 	"appengine/aetest"
 	"appengine/datastore"
-	"github.com/drborges/appxv2"
+	"github.com/drborges/appx"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 )

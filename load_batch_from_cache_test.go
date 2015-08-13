@@ -3,7 +3,7 @@ package appx_test
 import (
 	"appengine/aetest"
 	"appengine/memcache"
-	"github.com/drborges/appxv2"
+	"github.com/drborges/appx"
 	"github.com/drborges/riversv2"
 	"github.com/drborges/riversv2/rx"
 	. "github.com/smartystreets/goconvey/convey"

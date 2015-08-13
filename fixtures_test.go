@@ -2,7 +2,7 @@ package appx_test
 
 import (
 	"appengine/datastore"
-	"github.com/drborges/appxv2"
+	"github.com/drborges/appx"
 )
 
 type Entity struct {

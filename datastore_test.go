@@ -4,7 +4,7 @@ import (
 	"appengine/aetest"
 	"appengine/datastore"
 	"appengine/memcache"
-	"github.com/drborges/appxv2"
+	"github.com/drborges/appx"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 	"time"

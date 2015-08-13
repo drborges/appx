@@ -1,6 +1,6 @@
 package appx_test
 
-import "github.com/drborges/appxv2"
+import "github.com/drborges/appx"
 
 type Tag struct {
 	appx.Model
