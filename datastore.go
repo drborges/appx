@@ -20,7 +20,7 @@ func (datastore *Datastore) Load(entities ...Entity) error {
 	pipeline := rivers.NewWith(context)
 
 	cacheableEntities, nonCacheableEntities := pipeline.FromSlice(entities).
-		Map(step.ResolveEntityKey(datastore.context)).
+		Map(step.ResolveEntityKeySilently(datastore.context)).
 		Partition(step.CacheableWithNonEmptyCacheKey)
 
 	cacheMisses, cacheMissesToBeCached := cacheableEntities.
@@ -45,18 +45,31 @@ func (datastore *Datastore) Load(entities ...Entity) error {
 	return cacheMissesToBeCached.
 		Filter(step.EntitiesWithNonEmptyCacheIDs).
 		BatchBy(step.MemcacheSaveBatchOf(1000)).
-		Apply(step.SaveMemcacheBatch(datastore.context)).
+		Map(step.SaveMemcacheBatch(datastore.context)).
 		Drain()
 }
 
 func (datastore *Datastore) Save(entities ...Entity) error {
 	context := rivers.NewContext()
-	transformer := NewTransformer(context)
-	return rivers.NewWith(context).FromSlice(entities).
-		Apply(transformer.ResolveEntityKey2(datastore.context)).
-		Apply(transformer.UpdateEntitiesInDatastore(datastore.context)).
-		Apply(transformer.UpdateEntitiesInCache(datastore.context)).
-		Drain()
+	step := NewTransformer(context)
+	pipeline := rivers.NewWith(context).FromSlice(entities)
+
+	entitiesToBeCached, entitiesToBeSavedInDatastore := pipeline.
+		Map(step.ResolveEntityKey(datastore.context)).
+		Split()
+
+	cacheStream := entitiesToBeCached.
+		Filter(step.CacheableWithNonEmptyCacheKey).
+		BatchBy(step.MemcacheSaveBatchOf(500)).
+		Map(step.SaveMemcacheBatch(datastore.context))
+
+	datastoreStream := entitiesToBeSavedInDatastore.
+		BatchBy(step.DatastoreBatchOf(500)).
+		Map(step.SaveDatastoreBatch(datastore.context))
+
+	return pipeline.Combine(
+		cacheStream.Sink(),
+		datastoreStream.Sink()).Drain()
 }
 
 func (datastore *Datastore) Delete(entities ...Entity) error {

@@ -31,10 +31,20 @@ func (builder *transformersBuilder) EntitiesWithNonEmptyCacheIDs(data rx.T) bool
 	return cacheable.CacheID() != ""
 }
 
-func (builder *transformersBuilder) ResolveEntityKey(context appengine.Context) rx.MapFn {
+func (builder *transformersBuilder) ResolveEntityKeySilently(context appengine.Context) rx.MapFn {
 	return func(data rx.T) rx.T {
 		entity := data.(Entity)
 		NewKeyResolver(context).Resolve(entity)
+		return entity
+	}
+}
+
+func (builder *transformersBuilder) ResolveEntityKey(context appengine.Context) rx.MapFn {
+	return func(data rx.T) rx.T {
+		entity := data.(Entity)
+		if err := NewKeyResolver(context).Resolve(entity); err != nil {
+			panic(err)
+		}
 		return entity
 	}
 }
@@ -57,16 +67,33 @@ func (builder *transformersBuilder) DatastoreBatchOf(size int) rx.Batch {
 	return &BatchDatastore{Size: size}
 }
 
-func (builder *transformersBuilder) SaveMemcacheBatch(context appengine.Context) *observer {
-	return &observer {
-		context: builder.context,
-		onComplete: func(out rx.OutStream) {},
-		onData: func(data rx.T, out rx.OutStream) {
-			batch := data.(*BatchCacheSetter)
-			if err := memcache.SetMulti(context, batch.Items); err != nil {
-				panic(err)
-			}
-		},
+func (builder *transformersBuilder) SaveMemcacheBatch(context appengine.Context) rx.MapFn {
+	return func(data rx.T) rx.T {
+		batch := data.(*BatchCacheSetter)
+		if err := memcache.SetMulti(context, batch.Items); err != nil {
+			panic(err)
+		}
+		return batch
+	}
+}
+
+func (builder *transformersBuilder) SaveDatastoreBatch(context appengine.Context) rx.MapFn {
+	return func(data rx.T) rx.T {
+		batch := data.(*BatchDatastore)
+		keys, err := datastore.PutMulti(context, batch.Keys, batch.Items)
+
+		if err != nil {
+			panic(err)
+		}
+
+		// Set refreshed keys back to the entities
+		// For new entities with incomplete keys, the actual
+		// key is the one returned by PutMulti
+		for i, key := range keys {
+			batch.Items[i].SetKey(key)
+		}
+
+		return batch
 	}
 }
 
