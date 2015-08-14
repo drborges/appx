@@ -5,7 +5,6 @@ import (
 	"appengine/datastore"
 	"github.com/drborges/appx"
 	"github.com/drborges/rivers"
-	"github.com/drborges/rivers/rx"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 	"time"
@@ -40,8 +39,8 @@ func TestQueryEntityFromDatastore(t *testing.T) {
 				},
 			}
 
-			runQuery := func () {
-				queryProcessor(nonExistentUser, nil)
+			runQuery := func() {
+				queryProcessor(nonExistentUser)
 			}
 
 			Convey("Then query processor panics", func() {
@@ -67,20 +66,13 @@ func TestQueryEntityFromDatastore(t *testing.T) {
 					},
 				}
 
-				in, out := rx.NewStream(2)
-				queryProcessor(userFromDatastore, out)
-				close(out)
+				queryProcessor(userFromDatastore)
 
-
-				Convey("Then no entities are sent downstream", func() {
-					So(in.Read(), ShouldBeEmpty)
-
-					Convey("And queryable entities are loaded from datastore", func() {
-						So(userFromDatastore.Name, ShouldEqual, user.Name)
-						So(userFromDatastore.Email, ShouldEqual, user.Email)
-						So(userFromDatastore.Key(), ShouldResemble, user.Key())
-						So(userFromDatastore.ParentKey(), ShouldResemble, user.ParentKey())
-					})
+				Convey("And queryable entities are loaded from datastore", func() {
+					So(userFromDatastore.Name, ShouldEqual, user.Name)
+					So(userFromDatastore.Email, ShouldEqual, user.Email)
+					So(userFromDatastore.Key(), ShouldResemble, user.Key())
+					So(userFromDatastore.ParentKey(), ShouldResemble, user.ParentKey())
 				})
 			})
 		})

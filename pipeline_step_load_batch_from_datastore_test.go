@@ -5,7 +5,6 @@ import (
 	"appengine/datastore"
 	"github.com/drborges/appx"
 	"github.com/drborges/rivers"
-	"github.com/drborges/rivers/rx"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 )
@@ -59,17 +58,11 @@ func TestLoadBatchFromDatastore(t *testing.T) {
 					},
 				}
 
-				in, out := rx.NewStream(1)
-				loadBatchProcessor(batch, out)
-				close(out)
+				loadBatchProcessor(batch)
 
-				Convey("Then no entities are sent downstream", func() {
-					So(in.Read(), ShouldBeEmpty)
-
-					Convey("And entities are loaded from datastore", func() {
-						So(userFromDatastore1, ShouldResemble, user1)
-						So(userFromDatastore2, ShouldResemble, user2)
-					})
+				Convey("And entities are loaded from datastore", func() {
+					So(userFromDatastore1, ShouldResemble, user1)
+					So(userFromDatastore2, ShouldResemble, user2)
 				})
 			})
 		})

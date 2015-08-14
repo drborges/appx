@@ -5,7 +5,6 @@ import (
 	"appengine/datastore"
 	"github.com/drborges/appx"
 	"github.com/drborges/rivers"
-	"github.com/drborges/rivers/rx"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 )
@@ -59,20 +58,14 @@ func TestDeleteBatchFromDatastore(t *testing.T) {
 					},
 				}
 
-				in, out := rx.NewStream(1)
-				deleteBatchProcessor(batch, out)
-				close(out)
+				deleteBatchProcessor(batch)
 
-				Convey("Then no entities are sent downstream", func() {
-					So(in.Read(), ShouldBeEmpty)
+				Convey("And entities are loaded from datastore", func() {
+					err := datastore.Get(gaeCtx, user1.Key(), user1)
+					So(err, ShouldEqual, datastore.ErrNoSuchEntity)
 
-					Convey("And entities are loaded from datastore", func() {
-						err := datastore.Get(gaeCtx, user1.Key(), user1)
-						So(err, ShouldEqual, datastore.ErrNoSuchEntity)
-
-						err = datastore.Get(gaeCtx, user2.Key(), user2)
-						So(err, ShouldEqual, datastore.ErrNoSuchEntity)
-					})
+					err = datastore.Get(gaeCtx, user2.Key(), user2)
+					So(err, ShouldEqual, datastore.ErrNoSuchEntity)
 				})
 			})
 		})

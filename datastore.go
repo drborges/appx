@@ -20,7 +20,7 @@ func (datastore *Datastore) Load(entities ...Entity) error {
 	pipeline := rivers.NewWith(context)
 
 	cacheableEntities, nonCacheableEntities := pipeline.FromSlice(entities).
-		Map(step.ResolveEntityKeySilently(datastore.context)).
+		Each(step.ResolveEntityKeySilently(datastore.context)).
 		Partition(step.CacheableEntitiesWithCacheKey)
 
 	cacheMisses, cacheMissesToBeCached := cacheableEntities.
@@ -35,10 +35,10 @@ func (datastore *Datastore) Load(entities ...Entity) error {
 
 	notLoadedEntities := entitiesWithKeys.
 		BatchBy(step.DatastoreBatchOf(1000)).
-		ProcessWith(step.LoadBatchFromDatastore(datastore.context))
+		Each(step.LoadBatchFromDatastore(datastore.context))
 
 	notQueriedEntities := entitiesMissingKeys.
-		ProcessWith(step.QueryEntityFromDatastore(datastore.context))
+		Each(step.QueryEntityFromDatastore(datastore.context))
 
 	pipeline.Combine(
 		notLoadedEntities.Sink(),
@@ -47,7 +47,7 @@ func (datastore *Datastore) Load(entities ...Entity) error {
 	return cacheMissesToBeCached.
 		Filter(step.EntitiesWithNonEmptyCacheIDs).
 		BatchBy(step.MemcacheSaveBatchOf(1000)).
-		Map(step.SaveMemcacheBatch(datastore.context)).
+		Each(step.SaveMemcacheBatch(datastore.context)).
 		Drain()
 }
 
@@ -57,17 +57,17 @@ func (datastore *Datastore) Save(entities ...Entity) error {
 	pipeline := rivers.NewWith(context).FromSlice(entities)
 
 	entitiesToBeCached, entitiesToBeSavedInDatastore := pipeline.
-		Map(step.ResolveEntityKey(datastore.context)).
+		Each(step.ResolveEntityKey(datastore.context)).
 		Split()
 
 	cacheStream := entitiesToBeCached.
 		Filter(step.CacheableEntitiesWithCacheKey).
 		BatchBy(step.MemcacheSaveBatchOf(500)).
-		Map(step.SaveMemcacheBatch(datastore.context))
+		Each(step.SaveMemcacheBatch(datastore.context))
 
 	datastoreStream := entitiesToBeSavedInDatastore.
 		BatchBy(step.DatastoreBatchOf(500)).
-		Map(step.SaveDatastoreBatch(datastore.context))
+		Each(step.SaveDatastoreBatch(datastore.context))
 
 	return pipeline.Combine(
 		cacheStream.Sink(),
@@ -80,17 +80,17 @@ func (datastore *Datastore) Delete(entities ...Entity) error {
 	pipeline := rivers.NewWith(context).FromSlice(entities)
 
 	deleteFromCache, deleteFromDatastore := pipeline.
-		Map(step.ResolveEntityKey(datastore.context)).
+		Each(step.ResolveEntityKey(datastore.context)).
 		Split()
 
 	cacheStream := deleteFromCache.
 		Filter(step.CacheableEntitiesWithCacheKey).
 		BatchBy(step.MemcacheDeleteBatchOf(500)).
-		ProcessWith(step.DeleteBatchFromCache(datastore.context))
+		Each(step.DeleteBatchFromCache(datastore.context))
 
 	datastoreStream := deleteFromDatastore.
 		BatchBy(step.DatastoreBatchOf(500)).
-		ProcessWith(step.DeleteBatchFromDatastore(datastore.context))
+		Each(step.DeleteBatchFromDatastore(datastore.context))
 
 	return pipeline.Combine(
 		cacheStream.Sink(),

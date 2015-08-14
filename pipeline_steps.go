@@ -33,21 +33,17 @@ func (builder *stepsBuilder) EntitiesWithNonEmptyCacheIDs(data rx.T) bool {
 	return cacheable.CacheID() != ""
 }
 
-func (builder *stepsBuilder) ResolveEntityKeySilently(context appengine.Context) rx.MapFn {
-	return func(data rx.T) rx.T {
-		entity := data.(Entity)
-		NewKeyResolver(context).Resolve(entity)
-		return entity
+func (builder *stepsBuilder) ResolveEntityKeySilently(context appengine.Context) rx.HandleFn {
+	return func(data rx.T) {
+		NewKeyResolver(context).Resolve(data.(Entity))
 	}
 }
 
-func (builder *stepsBuilder) ResolveEntityKey(context appengine.Context) rx.MapFn {
-	return func(data rx.T) rx.T {
-		entity := data.(Entity)
-		if err := NewKeyResolver(context).Resolve(entity); err != nil {
+func (builder *stepsBuilder) ResolveEntityKey(context appengine.Context) rx.HandleFn {
+	return func(data rx.T) {
+		if err := NewKeyResolver(context).Resolve(data.(Entity)); err != nil {
 			panic(err)
 		}
-		return entity
 	}
 }
 
@@ -75,19 +71,17 @@ func (builder *stepsBuilder) DatastoreBatchOf(size int) rx.Batch {
 	return &DatastoreBatch{Size: size}
 }
 
-func (builder *stepsBuilder) SaveMemcacheBatch(context appengine.Context) rx.MapFn {
-	return func(data rx.T) rx.T {
-		batch := data.(*MemcacheSaveBatch)
-		if err := memcache.SetMulti(context, batch.Items); err != nil {
+func (builder *stepsBuilder) SaveMemcacheBatch(context appengine.Context) rx.HandleFn {
+	return func(data rx.T) {
+		if err := memcache.SetMulti(context, data.(*MemcacheSaveBatch).Items); err != nil {
 			panic(err)
 		}
-		return batch
 	}
 }
 
 // TODO write test case to make sure keys are set back to the entities after saving batch
-func (builder *stepsBuilder) SaveDatastoreBatch(context appengine.Context) rx.MapFn {
-	return func(data rx.T) rx.T {
+func (builder *stepsBuilder) SaveDatastoreBatch(context appengine.Context) rx.HandleFn {
+	return func(data rx.T) {
 		batch := data.(*DatastoreBatch)
 		keys, err := datastore.PutMulti(context, batch.Keys, batch.Items)
 
@@ -101,22 +95,18 @@ func (builder *stepsBuilder) SaveDatastoreBatch(context appengine.Context) rx.Ma
 		for i, key := range keys {
 			batch.Items[i].SetKey(key)
 		}
-
-		return batch
 	}
 }
 
-func (builder *stepsBuilder) DeleteBatchFromCache(context appengine.Context) rx.OnDataFn {
-	return func(data rx.T, _ rx.OutStream) {
-		batch := data.(*MemcacheDeleteBatch)
-		memcache.DeleteMulti(context, batch.Keys)
+func (builder *stepsBuilder) DeleteBatchFromCache(context appengine.Context) rx.HandleFn {
+	return func(data rx.T) {
+		memcache.DeleteMulti(context, data.(*MemcacheDeleteBatch).Keys)
 	}
 }
 
-func (builder *stepsBuilder) DeleteBatchFromDatastore(context appengine.Context) rx.OnDataFn {
-	return func(data rx.T, _ rx.OutStream) {
-		batch := data.(*DatastoreBatch)
-		if err := datastore.DeleteMulti(context, batch.Keys); err != nil {
+func (builder *stepsBuilder) DeleteBatchFromDatastore(context appengine.Context) rx.HandleFn {
+	return func(data rx.T) {
+		if err := datastore.DeleteMulti(context, data.(*DatastoreBatch).Keys); err != nil {
 			panic(err)
 		}
 	}
@@ -150,8 +140,8 @@ func (builder *stepsBuilder) LoadBatchFromCache(context appengine.Context) rx.On
 	}
 }
 
-func (builder *stepsBuilder) LoadBatchFromDatastore(context appengine.Context) rx.OnDataFn {
-	return func(data rx.T, out rx.OutStream) {
+func (builder *stepsBuilder) LoadBatchFromDatastore(context appengine.Context) rx.HandleFn {
+	return func(data rx.T) {
 		batch := data.(*DatastoreBatch)
 		if err := datastore.GetMulti(context, batch.Keys, batch.Items); err != nil {
 			panic(err)
@@ -159,10 +149,9 @@ func (builder *stepsBuilder) LoadBatchFromDatastore(context appengine.Context) r
 	}
 }
 
-func (builder *stepsBuilder) QueryEntityFromDatastore(context appengine.Context) rx.OnDataFn {
-	return func(data rx.T, out rx.OutStream) {
-		queryable, _ := data.(Queryable)
-		if err := NewItemsIterator(context, queryable.Query()).LoadNext(data); err != nil {
+func (builder *stepsBuilder) QueryEntityFromDatastore(context appengine.Context) rx.HandleFn {
+	return func(data rx.T) {
+		if err := NewItemsIterator(context, data.(Queryable).Query()).LoadNext(data); err != nil {
 			panic(err)
 		}
 	}
