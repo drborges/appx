@@ -65,7 +65,7 @@ func (builder *transformersBuilder) MemcacheSaveBatchOf(size int) rx.Batch {
 
 func (builder *transformersBuilder) MemcacheDeleteBatchOf(size int) rx.Batch {
 	return &BatchCacheDeleter{
-		Size:  size,
+		Size: size,
 	}
 }
 
@@ -166,25 +166,6 @@ func (builder *transformersBuilder) LoadBatchFromDatastore(context appengine.Con
 	}
 }
 
-func (builder *transformersBuilder) ResolveEntityKey2(context appengine.Context) *transformer {
-	return &transformer{
-		context: builder.context,
-		transform: func(data rx.T) bool {
-			entity, ok := data.(Entity)
-			if !ok {
-				return false
-			}
-
-			if entity.HasKey() {
-				return true
-			}
-
-			NewKeyResolver(context).Resolve(entity)
-			return true
-		},
-	}
-}
-
 func (builder *transformersBuilder) QueryEntityFromDatastore(context appengine.Context) *transformer {
 	return &transformer{
 		context: builder.context,
@@ -206,153 +187,6 @@ func (builder *transformersBuilder) QueryEntityFromDatastore(context appengine.C
 
 			entity.SetKey(key)
 			return false
-		},
-	}
-}
-
-func (builder *transformersBuilder) UpdateEntitiesInDatastore(context appengine.Context) *observer {
-	batch := &datastoreBatchSaver{}
-	batch.context = context
-	batch.size = 500
-
-	return &observer{
-		context: builder.context,
-
-		onComplete: func(out rx.OutStream) {
-			batch.Commit(out)
-		},
-
-		onData: func(data rx.T, out rx.OutStream) {
-			entity, ok := data.(Entity)
-			// TODO if it is not possible to update datastore,
-			// Then the process should not go any further
-			if !ok {
-				out <- data
-				return
-			}
-
-			if !entity.HasKey() {
-				out <- data
-				return
-			}
-
-			batch.Add(data)
-			if batch.Full() {
-				batch.Commit(out)
-			}
-		},
-	}
-}
-
-func (builder *transformersBuilder) UpdateEntitiesInCache(context appengine.Context) *observer {
-	batch := &cacheBatchSetter{
-		context: context,
-		size:    500,
-		items:   []*memcache.Item{},
-	}
-
-	return &observer{
-		context: builder.context,
-
-		onComplete: func(out rx.OutStream) {
-			batch.Commit(out)
-		},
-
-		onData: func(data rx.T, out rx.OutStream) {
-			entity, ok := data.(Entity)
-			if !ok {
-				out <- data
-				return
-			}
-
-			cacheable, ok := data.(Cacheable)
-			if !ok {
-				out <- data
-				return
-			}
-
-			if cacheable.CacheID() == "" {
-				out <- entity
-				return
-			}
-
-			batch.Add(data)
-			if batch.Full() {
-				batch.Commit(out)
-			}
-		},
-	}
-}
-
-func (builder *transformersBuilder) DeleteEntitiesFromCache(context appengine.Context) *observer {
-	batch := &cacheBatchDeleter{
-		context: context,
-		size:    500,
-	}
-
-	return &observer{
-		context: builder.context,
-
-		onComplete: func(out rx.OutStream) {
-			batch.Commit(out)
-		},
-
-		onData: func(data rx.T, out rx.OutStream) {
-			entity, ok := data.(Entity)
-			if !ok {
-				out <- data
-				return
-			}
-
-			cacheable, ok := data.(Cacheable)
-			if !ok {
-				out <- data
-				return
-			}
-
-			if cacheable.CacheID() == "" {
-				out <- entity
-				return
-			}
-
-			batch.Add(data)
-			if batch.Full() {
-				batch.Commit(out)
-			}
-
-			out <- entity
-		},
-	}
-}
-
-func (builder *transformersBuilder) DeleteEntitiesFromDatastore(context appengine.Context) *observer {
-	batch := &datastoreBatchDeleter{}
-	batch.context = context
-	batch.size = 500
-
-	return &observer{
-		context: builder.context,
-
-		onComplete: func(out rx.OutStream) {
-			batch.Commit(out)
-		},
-
-		onData: func(data rx.T, out rx.OutStream) {
-			entity, ok := data.(Entity)
-			if !ok {
-				out <- data
-				return
-			}
-
-			if !entity.HasKey() {
-				out <- data
-				return
-			}
-
-			batch.Add(data)
-			if batch.Full() {
-				batch.Commit(out)
-			}
 		},
 	}
 }

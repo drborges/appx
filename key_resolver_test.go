@@ -16,7 +16,7 @@ func TestKeyResolver(t *testing.T) {
 		manager := appx.NewKeyResolver(context)
 
 		Convey("When I resolve a key of an entity with no parent", func() {
-			entity := &Entity{
+			entity := &User{
 				keySpec: &appx.KeySpec{
 					Kind:  "Entity",
 					IntID: 123,
@@ -38,7 +38,7 @@ func TestKeyResolver(t *testing.T) {
 		})
 
 		Convey("When I resolve a key of an entity with parent", func() {
-			entity := &Entity{
+			entity := &User{
 				keySpec: &appx.KeySpec{
 					Kind:      "Entity",
 					IntID:     123,
@@ -66,7 +66,7 @@ func TestKeyResolver(t *testing.T) {
 		})
 
 		Convey("When I resolve a key of an entity whose key spec is incomplete", func() {
-			entity := &Entity{
+			entity := &User{
 				keySpec: &appx.KeySpec{
 					Kind:       "People",
 					Incomplete: true,
@@ -82,7 +82,7 @@ func TestKeyResolver(t *testing.T) {
 		})
 
 		Convey("When I resolve a key of an entity whose key spec is missing kind information", func() {
-			err := manager.Resolve(&Entity{
+			err := manager.Resolve(&User{
 				keySpec: &appx.KeySpec{},
 			})
 
@@ -92,7 +92,7 @@ func TestKeyResolver(t *testing.T) {
 		})
 
 		Convey("When I resolve a key of an entity whose key spec is of an incomplete key", func() {
-			err := manager.Resolve(&Entity{
+			err := manager.Resolve(&User{
 				keySpec: &appx.KeySpec{Kind: "Entity"},
 			})
 
@@ -102,7 +102,7 @@ func TestKeyResolver(t *testing.T) {
 		})
 
 		Convey("When I resolve a key of an entity whose key spec requires a parent key and it's missing", func() {
-			err := manager.Resolve(&Entity{
+			err := manager.Resolve(&User{
 				keySpec: &appx.KeySpec{
 					Kind:      "Entity",
 					IntID:     123,
@@ -116,7 +116,7 @@ func TestKeyResolver(t *testing.T) {
 		})
 
 		Convey("When I resolve a key of an entity whose key spec requires a parent key and parent key is incomplete", func() {
-			entity := &Entity{
+			entity := &User{
 				keySpec: &appx.KeySpec{
 					Kind:      "Entity",
 					IntID:     123,

@@ -4,11 +4,11 @@ import (
 	"appengine/aetest"
 	"appengine/datastore"
 	"appengine/memcache"
+	"encoding/json"
 	"github.com/drborges/appx"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 	"time"
-	"encoding/json"
 )
 
 func TestDatastoreLoad(t *testing.T) {
@@ -69,7 +69,7 @@ func TestDatastoreLoad(t *testing.T) {
 		Convey("When I load it with appx datastore", func() {
 			userFromDatastore := NewUser(User{
 				Email: user.Email,
-				SSN: "321321",
+				SSN:   "321321",
 			})
 
 			err := appx.NewDatastore(context).Load(userFromDatastore)

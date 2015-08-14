@@ -5,34 +5,12 @@ import (
 	"github.com/drborges/appx"
 )
 
-type Entity struct {
-	appx.Model
-	keySpec *appx.KeySpec
-}
-
-func (entity Entity) KeySpec() *appx.KeySpec {
-	return entity.keySpec
-}
-
 type User struct {
 	appx.Model
 	Name    string
 	Email   string
 	SSN     string
 	keySpec *appx.KeySpec
-}
-
-func NewUserWithParent(user User) *User {
-	return &User{
-		Name:  user.Name,
-		Email: user.Email,
-		SSN:   user.SSN,
-		keySpec: &appx.KeySpec{
-			Kind:      "Users",
-			StringID:  user.Name,
-			HasParent: true,
-		},
-	}
 }
 
 func NewUser(user User) *User {
@@ -73,17 +51,4 @@ func (user *User) CacheID() string {
 
 func (user *User) Query() *datastore.Query {
 	return datastore.NewQuery(user.keySpec.Kind).Filter("Email=", user.Email).Limit(1)
-}
-
-type Device struct {
-	appx.Model
-	ID    int64
-	Owner string
-}
-
-func (device *Device) KeySpec() *appx.KeySpec {
-	return &appx.KeySpec{
-		Kind:  "Devices",
-		IntID: device.ID,
-	}
 }

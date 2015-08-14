@@ -1,11 +1,11 @@
 package appx_test
 
 import (
+	"encoding/json"
 	"github.com/drborges/appx"
 	"github.com/drborges/riversv2/rx"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
-	"encoding/json"
 )
 
 func toJSON(e appx.Entity) []byte {
@@ -49,12 +49,12 @@ func TestBatchCacheSetter(t *testing.T) {
 
 			entity1 := NewUserWithFakeKey(User{
 				Name: "entity1",
-				SSN: "123123",
+				SSN:  "123123",
 			})
 
 			entity2 := NewUserWithFakeKey(User{
 				Name: "entity2",
-				SSN: "321321",
+				SSN:  "321321",
 			})
 
 			batch.Add(entity1)
@@ -110,12 +110,12 @@ func TestBatchCacheLoader(t *testing.T) {
 
 			entity1 := NewUserWithFakeKey(User{
 				Name: "entity1",
-				SSN: "123123",
+				SSN:  "123123",
 			})
 
 			entity2 := NewUserWithFakeKey(User{
 				Name: "entity2",
-				SSN: "321321",
+				SSN:  "321321",
 			})
 
 			batch.Add(entity1)
@@ -171,12 +171,12 @@ func TestBatchCacheDeleter(t *testing.T) {
 
 			entity1 := NewUserWithFakeKey(User{
 				Name: "entity1",
-				SSN: "123123",
+				SSN:  "123123",
 			})
 
 			entity2 := NewUserWithFakeKey(User{
 				Name: "entity2",
-				SSN: "321321",
+				SSN:  "321321",
 			})
 
 			batch.Add(entity1)
