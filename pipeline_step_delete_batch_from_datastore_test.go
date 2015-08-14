@@ -10,13 +10,13 @@ import (
 	"testing"
 )
 
-func TestLoadBatchFromDatastore(t *testing.T) {
+func TestDeleteBatchFromDatastore(t *testing.T) {
 	gaeCtx, _ := aetest.NewContext(nil)
 	defer gaeCtx.Close()
 
 	Convey("Given I have a load batch from datastore transformer", t, func() {
 		riversCtx := rivers.NewContext()
-		transformer := appx.NewTransformer(riversCtx).LoadBatchFromDatastore(gaeCtx)
+		deleteBatchProcessor := appx.NewStep(riversCtx).DeleteBatchFromDatastore(gaeCtx)
 
 		Convey("And I have a few entities in datastore", func() {
 			user1 := NewUser(User{
@@ -47,8 +47,7 @@ func TestLoadBatchFromDatastore(t *testing.T) {
 				appx.NewKeyResolver(gaeCtx).Resolve(userFromDatastore1)
 				appx.NewKeyResolver(gaeCtx).Resolve(userFromDatastore2)
 
-				in, out := rx.NewStream(1)
-				out <- &appx.BatchDatastore{
+				batch := &appx.DatastoreBatch{
 					Size: 2,
 					Keys: []*datastore.Key{
 						userFromDatastore1.Key(),
@@ -59,16 +58,20 @@ func TestLoadBatchFromDatastore(t *testing.T) {
 						userFromDatastore2,
 					},
 				}
+
+				in, out := rx.NewStream(1)
+				deleteBatchProcessor(batch, out)
 				close(out)
 
-				stream := transformer.Transform(in)
-
 				Convey("Then no entities are sent downstream", func() {
-					So(stream.Read(), ShouldBeEmpty)
+					So(in.Read(), ShouldBeEmpty)
 
 					Convey("And entities are loaded from datastore", func() {
-						So(userFromDatastore1, ShouldResemble, user1)
-						So(userFromDatastore2, ShouldResemble, user2)
+						err := datastore.Get(gaeCtx, user1.Key(), user1)
+						So(err, ShouldEqual, datastore.ErrNoSuchEntity)
+
+						err = datastore.Get(gaeCtx, user2.Key(), user2)
+						So(err, ShouldEqual, datastore.ErrNoSuchEntity)
 					})
 				})
 			})

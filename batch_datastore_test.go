@@ -9,7 +9,7 @@ import (
 
 func TestBatchDatastore(t *testing.T) {
 	Convey("Given I have an empty datastore batch of size 2", t, func() {
-		batch := &appx.BatchDatastore{Size: 2}
+		batch := &appx.DatastoreBatch{Size: 2}
 		So(batch.Empty(), ShouldBeTrue)
 		So(batch.Full(), ShouldBeFalse)
 
@@ -46,7 +46,7 @@ func TestBatchDatastore(t *testing.T) {
 			close(out)
 
 			Convey("Then a copy of the batch is sent to the output stream", func() {
-				committedBatch := (<-in).(*appx.BatchDatastore)
+				committedBatch := (<-in).(*appx.DatastoreBatch)
 				So(committedBatch.Size, ShouldEqual, 2)
 				So(committedBatch.Keys[0], ShouldEqual, entity1.Key())
 				So(committedBatch.Keys[1], ShouldEqual, entity2.Key())

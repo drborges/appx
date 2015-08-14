@@ -1,25 +1,15 @@
 package appx_test
 
 import (
-	"encoding/json"
 	"github.com/drborges/appx"
 	"github.com/drborges/riversv2/rx"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 )
 
-func toJSON(e appx.Entity) []byte {
-	cachedEntity := &appx.CachedEntity{
-		Entity: e,
-		Key:    e.Key(),
-	}
-	json, _ := json.Marshal(cachedEntity)
-	return json
-}
-
 func TestBatchCacheSetter(t *testing.T) {
 	Convey("Given I have an empty batch of size 2", t, func() {
-		batch := &appx.BatchCacheSetter{Size: 2}
+		batch := &appx.MemcacheSaveBatch{Size: 2}
 		So(batch.Empty(), ShouldBeTrue)
 		So(batch.Full(), ShouldBeFalse)
 
@@ -63,7 +53,7 @@ func TestBatchCacheSetter(t *testing.T) {
 			close(out)
 
 			Convey("Then a copy of the batch is sent to the output stream", func() {
-				committedBatch := (<-in).(*appx.BatchCacheSetter)
+				committedBatch := (<-in).(*appx.MemcacheSaveBatch)
 				So(committedBatch.Size, ShouldEqual, 2)
 				So(committedBatch.Items[0].Key, ShouldEqual, entity1.CacheID())
 				So(committedBatch.Items[1].Key, ShouldEqual, entity2.CacheID())
@@ -80,7 +70,7 @@ func TestBatchCacheSetter(t *testing.T) {
 
 func TestBatchCacheLoader(t *testing.T) {
 	Convey("Given I have an empty batch of size 2", t, func() {
-		batch := &appx.BatchCacheLoader{Size: 2}
+		batch := &appx.MemcacheLoadBatch{Size: 2}
 		So(batch.Empty(), ShouldBeTrue)
 		So(batch.Full(), ShouldBeFalse)
 
@@ -124,7 +114,7 @@ func TestBatchCacheLoader(t *testing.T) {
 			close(out)
 
 			Convey("Then a copy of the batch is sent to the output stream", func() {
-				committedBatch := (<-in).(*appx.BatchCacheLoader)
+				committedBatch := (<-in).(*appx.MemcacheLoadBatch)
 				So(committedBatch.Size, ShouldEqual, 2)
 				So(committedBatch.Keys[0], ShouldEqual, entity1.CacheID())
 				So(committedBatch.Keys[1], ShouldEqual, entity2.CacheID())
@@ -141,7 +131,7 @@ func TestBatchCacheLoader(t *testing.T) {
 
 func TestBatchCacheDeleter(t *testing.T) {
 	Convey("Given I have an empty batch of size 2", t, func() {
-		batch := &appx.BatchCacheDeleter{Size: 2}
+		batch := &appx.MemcacheDeleteBatch{Size: 2}
 		So(batch.Empty(), ShouldBeTrue)
 		So(batch.Full(), ShouldBeFalse)
 
@@ -185,7 +175,7 @@ func TestBatchCacheDeleter(t *testing.T) {
 			close(out)
 
 			Convey("Then a copy of the batch is sent to the output stream", func() {
-				committedBatch := (<-in).(*appx.BatchCacheDeleter)
+				committedBatch := (<-in).(*appx.MemcacheDeleteBatch)
 				So(committedBatch.Size, ShouldEqual, 2)
 				So(committedBatch.Keys[0], ShouldEqual, entity1.CacheID())
 				So(committedBatch.Keys[1], ShouldEqual, entity2.CacheID())

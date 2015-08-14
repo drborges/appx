@@ -30,30 +30,22 @@ func TestQueryEntityFromDatastore(t *testing.T) {
 
 	Convey("Given I have a query entity from datastore transformer", t, func() {
 		riversCtx := rivers.NewContext()
-		transformer := appx.NewTransformer(riversCtx).QueryEntityFromDatastore(gaeCtx)
+		queryProcessor := appx.NewStep(riversCtx).QueryEntityFromDatastore(gaeCtx)
 
 		Convey("When I transform the inbound stream with non existent entity", func() {
-			userFromDatastore := &User{
+			nonExistentUser := &User{
 				Email: "diego@email.com",
 				keySpec: &appx.KeySpec{
 					Kind: "Users",
 				},
 			}
 
-			in, out := rx.NewStream(2)
-			out <- userFromDatastore
-			close(out)
+			runQuery := func () {
+				queryProcessor(nonExistentUser, nil)
+			}
 
-			stream := transformer.Transform(in)
-
-			Convey("Then no entities are sent downstream", func() {
-				So(stream.Read(), ShouldBeEmpty)
-
-				Convey("And context is closed with error", func() {
-					_, opened := <-riversCtx.Closed()
-					So(opened, ShouldBeFalse)
-					So(riversCtx.Err(), ShouldNotBeNil)
-				})
+			Convey("Then query processor panics", func() {
+				So(runQuery, ShouldPanic)
 			})
 		})
 
@@ -76,13 +68,12 @@ func TestQueryEntityFromDatastore(t *testing.T) {
 				}
 
 				in, out := rx.NewStream(2)
-				out <- userFromDatastore
+				queryProcessor(userFromDatastore, out)
 				close(out)
 
-				stream := transformer.Transform(in)
 
 				Convey("Then no entities are sent downstream", func() {
-					So(stream.Read(), ShouldBeEmpty)
+					So(in.Read(), ShouldBeEmpty)
 
 					Convey("And queryable entities are loaded from datastore", func() {
 						So(userFromDatastore.Name, ShouldEqual, user.Name)

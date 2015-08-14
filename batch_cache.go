@@ -6,20 +6,20 @@ import (
 	"github.com/drborges/riversv2/rx"
 )
 
-type BatchCacheSetter struct {
+type MemcacheSaveBatch struct {
 	Size  int
 	Items []*memcache.Item
 }
 
-func (batch *BatchCacheSetter) Full() bool {
+func (batch *MemcacheSaveBatch) Full() bool {
 	return len(batch.Items) == batch.Size
 }
 
-func (batch *BatchCacheSetter) Empty() bool {
+func (batch *MemcacheSaveBatch) Empty() bool {
 	return len(batch.Items) == 0
 }
 
-func (batch *BatchCacheSetter) Add(data rx.T) {
+func (batch *MemcacheSaveBatch) Add(data rx.T) {
 	entity := data.(Entity)
 	cacheable := data.(Cacheable)
 	cachedEntity := &CachedEntity{
@@ -38,8 +38,8 @@ func (batch *BatchCacheSetter) Add(data rx.T) {
 	})
 }
 
-func (batch *BatchCacheSetter) Commit(out rx.OutStream) {
-	out <- &BatchCacheSetter{
+func (batch *MemcacheSaveBatch) Commit(out rx.OutStream) {
+	out <- &MemcacheSaveBatch{
 		Size:  batch.Size,
 		Items: batch.Items,
 	}
@@ -47,21 +47,21 @@ func (batch *BatchCacheSetter) Commit(out rx.OutStream) {
 	batch.Items = []*memcache.Item{}
 }
 
-type BatchCacheLoader struct {
+type MemcacheLoadBatch struct {
 	Size  int
 	Keys  []string
 	Items map[string]*CachedEntity
 }
 
-func (batch *BatchCacheLoader) Full() bool {
+func (batch *MemcacheLoadBatch) Full() bool {
 	return len(batch.Keys) == batch.Size
 }
 
-func (batch *BatchCacheLoader) Empty() bool {
+func (batch *MemcacheLoadBatch) Empty() bool {
 	return len(batch.Keys) == 0
 }
 
-func (batch *BatchCacheLoader) Add(data rx.T) {
+func (batch *MemcacheLoadBatch) Add(data rx.T) {
 	entity := data.(Entity)
 	cacheable := data.(Cacheable)
 
@@ -75,8 +75,8 @@ func (batch *BatchCacheLoader) Add(data rx.T) {
 	}
 }
 
-func (batch *BatchCacheLoader) Commit(out rx.OutStream) {
-	out <- &BatchCacheLoader{
+func (batch *MemcacheLoadBatch) Commit(out rx.OutStream) {
+	out <- &MemcacheLoadBatch{
 		Size:  batch.Size,
 		Keys:  batch.Keys,
 		Items: batch.Items,
@@ -86,26 +86,26 @@ func (batch *BatchCacheLoader) Commit(out rx.OutStream) {
 	batch.Items = make(map[string]*CachedEntity)
 }
 
-type BatchCacheDeleter struct {
+type MemcacheDeleteBatch struct {
 	Size int
 	Keys []string
 }
 
-func (batch *BatchCacheDeleter) Full() bool {
+func (batch *MemcacheDeleteBatch) Full() bool {
 	return len(batch.Keys) == batch.Size
 }
 
-func (batch *BatchCacheDeleter) Empty() bool {
+func (batch *MemcacheDeleteBatch) Empty() bool {
 	return len(batch.Keys) == 0
 }
 
-func (batch *BatchCacheDeleter) Add(data rx.T) {
+func (batch *MemcacheDeleteBatch) Add(data rx.T) {
 	cacheable := data.(Cacheable)
 	batch.Keys = append(batch.Keys, cacheable.CacheID())
 }
 
-func (batch *BatchCacheDeleter) Commit(out rx.OutStream) {
-	out <- &BatchCacheDeleter{
+func (batch *MemcacheDeleteBatch) Commit(out rx.OutStream) {
+	out <- &MemcacheDeleteBatch{
 		Size: batch.Size,
 		Keys: batch.Keys,
 	}

@@ -16,7 +16,7 @@ func TestLoadBatchFromCache(t *testing.T) {
 
 	Convey("Given I have a load batch from cache transformer", t, func() {
 		riversCtx := rivers.NewContext()
-		transformer := appx.NewTransformer(riversCtx).LoadBatchFromCache(gaeCtx)
+		loadBatchProcessor := appx.NewStep(riversCtx).LoadBatchFromCache(gaeCtx)
 
 		Convey("And I have a few entities in the cache", func() {
 			user1 := NewUser(User{
@@ -70,18 +70,18 @@ func TestLoadBatchFromCache(t *testing.T) {
 					Entity: notCachedUser,
 				}
 
-				in, out := rx.NewStream(1)
-				out <- &appx.BatchCacheLoader{
+				batch := &appx.MemcacheLoadBatch{
 					Keys:  []string{user1.CacheID(), user2.CacheID()},
 					Items: batchItems,
 				}
 
+				in, out := rx.NewStream(1)
+				loadBatchProcessor(batch, out)
 				close(out)
 
-				stream := transformer.Transform(in)
 
 				Convey("Then cache misses are sent downstream", func() {
-					So(stream.Read(), ShouldResemble, []rx.T{notCachedUser})
+					So(in.Read(), ShouldResemble, []rx.T{notCachedUser})
 
 					Convey("And entities are loaded from cache", func() {
 						So(userFromCache1, ShouldResemble, user1)
