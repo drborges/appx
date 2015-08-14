@@ -74,12 +74,25 @@ func (datastore *Datastore) Save(entities ...Entity) error {
 
 func (datastore *Datastore) Delete(entities ...Entity) error {
 	context := rivers.NewContext()
-	transformer := NewTransformer(context)
-	return rivers.NewWith(context).FromSlice(entities).
-		Apply(transformer.ResolveEntityKey2(datastore.context)).
-		Apply(transformer.DeleteEntitiesFromCache(datastore.context)).
-		Apply(transformer.DeleteEntitiesFromDatastore(datastore.context)).
-		Drain()
+	step := NewTransformer(context)
+	pipeline := rivers.NewWith(context).FromSlice(entities)
+
+	deleteFromCache, deleteFromDatastore := pipeline.
+		Map(step.ResolveEntityKey(datastore.context)).
+		Split()
+
+	cacheStream := deleteFromCache.
+		Filter(step.CacheableWithNonEmptyCacheKey).
+		BatchBy(step.MemcacheDeleteBatchOf(500)).
+		Map(step.DeleteBatchFromCache(datastore.context))
+
+	datastoreStream := deleteFromDatastore.
+		BatchBy(step.DatastoreBatchOf(500)).
+		Map(step.DeleteBatchFromDatastore(datastore.context))
+
+	return pipeline.Combine(
+		cacheStream.Sink(),
+		datastoreStream.Sink()).Drain()
 }
 
 func (datastore *Datastore) Query(q *datastore.Query) *runner {

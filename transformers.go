@@ -63,6 +63,12 @@ func (builder *transformersBuilder) MemcacheSaveBatchOf(size int) rx.Batch {
 	}
 }
 
+func (builder *transformersBuilder) MemcacheDeleteBatchOf(size int) rx.Batch {
+	return &BatchCacheDeleter{
+		Size:  size,
+	}
+}
+
 func (builder *transformersBuilder) DatastoreBatchOf(size int) rx.Batch {
 	return &BatchDatastore{Size: size}
 }
@@ -93,6 +99,24 @@ func (builder *transformersBuilder) SaveDatastoreBatch(context appengine.Context
 			batch.Items[i].SetKey(key)
 		}
 
+		return batch
+	}
+}
+
+func (builder *transformersBuilder) DeleteBatchFromCache(context appengine.Context) rx.MapFn {
+	return func(data rx.T) rx.T {
+		batch := data.(*BatchCacheDeleter)
+		memcache.DeleteMulti(context, batch.Keys)
+		return batch
+	}
+}
+
+func (builder *transformersBuilder) DeleteBatchFromDatastore(context appengine.Context) rx.MapFn {
+	return func(data rx.T) rx.T {
+		batch := data.(*BatchDatastore)
+		if err := datastore.DeleteMulti(context, batch.Keys); err != nil {
+			panic(err)
+		}
 		return batch
 	}
 }
