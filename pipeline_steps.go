@@ -16,11 +16,13 @@ func NewStep(context rx.Context) *stepsBuilder {
 	return &stepsBuilder{context}
 }
 
+// TODO write test case
 func (builder *stepsBuilder) CacheableEntitiesWithCacheKey(data rx.T) bool {
 	cacheable, ok := data.(Cacheable)
 	return ok && cacheable.CacheID() != ""
 }
 
+// TODO write test case
 func (builder *stepsBuilder) ResolvedKeys(data rx.T) bool {
 	entity, _ := data.(Entity)
 	return entity.HasKey()
@@ -83,6 +85,7 @@ func (builder *stepsBuilder) SaveMemcacheBatch(context appengine.Context) rx.Map
 	}
 }
 
+// TODO write test case to make sure keys are set back to the entities after saving batch
 func (builder *stepsBuilder) SaveDatastoreBatch(context appengine.Context) rx.MapFn {
 	return func(data rx.T) rx.T {
 		batch := data.(*DatastoreBatch)
