@@ -5,7 +5,7 @@ import (
 	"appengine/datastore"
 	"appengine/memcache"
 	"encoding/json"
-	"github.com/drborges/riversv2/rx"
+	"github.com/drborges/rivers/rx"
 )
 
 type stepsBuilder struct {

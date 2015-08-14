@@ -3,8 +3,8 @@ package appx
 import (
 	"appengine"
 	"appengine/datastore"
-	"github.com/drborges/riversv2"
-	"github.com/drborges/riversv2/rx"
+	"github.com/drborges/rivers"
+	"github.com/drborges/rivers/rx"
 	"reflect"
 )
 

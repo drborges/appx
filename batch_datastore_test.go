@@ -2,7 +2,7 @@ package appx_test
 
 import (
 	"github.com/drborges/appx"
-	"github.com/drborges/riversv2/rx"
+	"github.com/drborges/rivers/rx"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 )

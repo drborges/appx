@@ -3,7 +3,7 @@ package appx
 import (
 	"appengine"
 	"appengine/datastore"
-	"github.com/drborges/riversv2"
+	"github.com/drborges/rivers"
 )
 
 type Datastore struct {

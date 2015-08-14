@@ -2,7 +2,7 @@ package appx
 
 import (
 	"appengine/datastore"
-	"github.com/drborges/riversv2/rx"
+	"github.com/drborges/rivers/rx"
 )
 
 type DatastoreBatch struct {

@@ -4,7 +4,7 @@ import (
 	"appengine/aetest"
 	"appengine/datastore"
 	"github.com/drborges/appx"
-	"github.com/drborges/riversv2/rx"
+	"github.com/drborges/rivers/rx"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 )
