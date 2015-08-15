@@ -8,6 +8,7 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 	"time"
+	"appengine/search"
 )
 
 func TestLoadOver1000Entities(t *testing.T) {
@@ -123,5 +124,13 @@ func TestLoadMultiEntityKind(t *testing.T) {
 			So(device1FromDatastore, ShouldResemble, device1)
 			So(device2FromDatastore, ShouldResemble, device2)
 		})
+
+		index, err := search.Open("Devices")
+		So(err, ShouldBeNil)
+		iter := index.Search(context, "borges", nil)
+		var device Device
+		_, err = iter.Next(&device)
+		So(err, ShouldBeNil)
+		So(device.Owner, ShouldEqual, "borges")
 	})
 }

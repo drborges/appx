@@ -45,32 +45,38 @@ func (datastore *Datastore) Load(entities ...Entity) error {
 		notQueriedEntities.Sink()).Drain()
 
 	return cacheMissesToBeCached.
-		Filter(step.EntitiesWithNonEmptyCacheIDs).
-		BatchBy(step.MemcacheSaveBatchOf(1000)).
+		TakeIf(step.EntitiesWithNonEmptyCacheIDs).
+		BatchBy(step.MemcacheSaveBatchOf(500)).
 		Each(step.SaveMemcacheBatch(datastore.context)).
 		Drain()
 }
 
+// TODO implement rollback mechanism for cleaning up the trash in cache/datastore/search on errors
 func (datastore *Datastore) Save(entities ...Entity) error {
 	context := rivers.NewContext()
 	step := NewStep(context)
 	pipeline := rivers.NewWith(context).FromSlice(entities)
 
-	entitiesToBeCached, entitiesToBeSavedInDatastore := pipeline.
+	streams := pipeline.
 		Each(step.ResolveEntityKey(datastore.context)).
-		Split()
+		SplitN(3)
 
-	cacheStream := entitiesToBeCached.
-		Filter(step.CacheableEntitiesWithCacheKey).
+	cacheStream := streams[0].
+		TakeIf(step.CacheableEntitiesWithCacheKey).
 		BatchBy(step.MemcacheSaveBatchOf(500)).
 		Each(step.SaveMemcacheBatch(datastore.context))
 
-	datastoreStream := entitiesToBeSavedInDatastore.
+	searchStream := streams[1].
+		TakeIf(step.SearchableEntityWithSearchID).
+		Each(step.IndexSearchableEntity(datastore.context))
+
+	datastoreStream := streams[2].
 		BatchBy(step.DatastoreBatchOf(500)).
 		Each(step.SaveDatastoreBatch(datastore.context))
 
 	return pipeline.Combine(
 		cacheStream.Sink(),
+		searchStream.Sink(),
 		datastoreStream.Sink()).Drain()
 }
 
@@ -84,7 +90,7 @@ func (datastore *Datastore) Delete(entities ...Entity) error {
 		Split()
 
 	cacheStream := deleteFromCache.
-		Filter(step.CacheableEntitiesWithCacheKey).
+		TakeIf(step.CacheableEntitiesWithCacheKey).
 		BatchBy(step.MemcacheDeleteBatchOf(500)).
 		Each(step.DeleteBatchFromCache(datastore.context))
 

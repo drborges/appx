@@ -16,3 +16,13 @@ func (device *Device) KeySpec() *appx.KeySpec {
 		IntID: device.ID,
 	}
 }
+
+func (device *Device) SearchSpec() appx.SearchDocument {
+	return appx.SearchDocument {
+		Index: device.KeySpec().Kind,
+		ID: device.EncodedKey(),
+		Doc: &struct { Owner string } {
+			Owner: device.Owner,
+		},
+	}
+}

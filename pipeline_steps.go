@@ -6,6 +6,7 @@ import (
 	"appengine/memcache"
 	"encoding/json"
 	"github.com/drborges/rivers/rx"
+	"appengine/search"
 )
 
 type stepsBuilder struct {
@@ -20,6 +21,28 @@ func NewStep(context rx.Context) *stepsBuilder {
 func (builder *stepsBuilder) CacheableEntitiesWithCacheKey(data rx.T) bool {
 	cacheable, ok := data.(Cacheable)
 	return ok && cacheable.CacheID() != ""
+}
+
+func (builder *stepsBuilder) SearchableEntityWithSearchID(data rx.T) bool {
+	searchable, ok := data.(Searchable)
+	if !ok {
+		return false
+	}
+	doc := searchable.SearchSpec()
+	return doc.ID != ""
+}
+
+func (builder *stepsBuilder) IndexSearchableEntity(context appengine.Context) rx.EachFn {
+	return func(data rx.T) {
+		doc := data.(Searchable).SearchSpec()
+		index, err := search.Open(doc.Index)
+		if err != nil {
+			panic(err)
+		}
+		if _, err := index.Put(context, doc.ID, doc.Doc); err != nil {
+			panic(err)
+		}
+	}
 }
 
 // TODO write test case

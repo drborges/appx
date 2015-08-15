@@ -27,6 +27,16 @@ type Cacheable interface {
 	CacheID() string
 }
 
+type Searchable interface {
+	SearchSpec() SearchDocument
+}
+
+type SearchDocument struct {
+	Index string
+	ID    string
+	Doc   interface{}
+}
+
 type Queryable interface {
 	Query() *datastore.Query
 }
