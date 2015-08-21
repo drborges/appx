@@ -111,7 +111,7 @@ func (repo *{{ .Name }}AppxRepository) FindBy(q *datastore.Query) *{{.Name}}Quer
 	}
 }
 
-func (repo *{{ .Name }}AppxRepository) FindAll() *{{.Name}}QueryRunner {
+func (repo *{{ .Name }}AppxRepository) Fetch() *{{.Name}}QueryRunner {
 	return repo.FindBy(datastore.NewQuery(new({{ $model.Name }}).KeySpec().Kind))
 }
 
