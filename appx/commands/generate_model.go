@@ -56,6 +56,9 @@ func NewGenerateModel(app *cli.App) cli.Command {
 			},
 		},
 		Action: func(c *cli.Context) {
+			if len(c.Args()) == 0 {
+				log.Fatal(app.Usage)
+			}
 			id := c.String("id")
 			name, pkg := "", "main"
 			pkgAndModel := strings.Split(c.Args().First(), ".")
