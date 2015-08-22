@@ -15,6 +15,28 @@ func TestKeyResolver(t *testing.T) {
 	Convey("Given I have a key manager", t, func() {
 		manager := appx.NewKeyResolver(context)
 
+		Convey("When I resolve a key of an entity with the key already set", func() {
+			entity := &User{
+				keySpec: &appx.KeySpec{
+					Kind:  "Entity",
+					IntID: 123,
+				},
+			}
+
+			key := datastore.NewKey(context, entity.keySpec.Kind, "", entity.keySpec.IntID, nil)
+			entity.SetKey(key)
+
+			err := manager.Resolve(entity)
+
+			Convey("Then it succeeds", func() {
+				So(err, ShouldBeNil)
+
+				Convey("And the entity key is not overriden", func() {
+					So(entity.Key(), ShouldEqual, key)
+				})
+			})
+		})
+
 		Convey("When I resolve a key of an entity with no parent", func() {
 			entity := &User{
 				keySpec: &appx.KeySpec{

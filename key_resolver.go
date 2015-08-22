@@ -14,6 +14,10 @@ func NewKeyResolver(context appengine.Context) *KeyResolver {
 }
 
 func (resolver *KeyResolver) Resolve(e Entity) error {
+	if e.HasKey() {
+		return nil
+	}
+
 	spec := e.KeySpec()
 
 	if err := spec.Validate(e); err != nil {

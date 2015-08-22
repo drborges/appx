@@ -176,6 +176,32 @@ func TestDatastoreSave(t *testing.T) {
 			})
 		})
 	})
+
+	Convey("Given I have an entity with incomplete key in datastore", t, func() {
+		user := &User{
+			Name: "Borges",
+			keySpec: &appx.KeySpec{
+				Kind:       "Users",
+				Incomplete: true,
+			},
+		}
+
+		err := appx.NewDatastore(context).Save(user)
+		So(err, ShouldBeNil)
+
+		userKey := user.Key()
+
+		Convey("When I update the entity", func() {
+			user.Email = "user@email.com"
+
+			err := appx.NewDatastore(context).Save(user)
+			So(err, ShouldBeNil)
+
+			Convey("Then the user key is not overriden", func() {
+				So(userKey, ShouldResemble, user.Key())
+			})
+		})
+	})
 }
 
 func TestDatastoreDelete(t *testing.T) {
