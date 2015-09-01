@@ -144,7 +144,9 @@ func (builder *stepsBuilder) LoadBatchFromDatastore(context appengine.Context) s
 	return func(data stream.T) {
 		batch := data.(*DatastoreBatch)
 		if err := datastore.GetMulti(context, batch.Keys, batch.Items); err != nil {
-			panic(err)
+			if _, missingField := err.(*datastore.ErrFieldMismatch); !missingField {
+				panic(err)
+			}
 		}
 	}
 }

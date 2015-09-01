@@ -62,7 +62,7 @@ func (this *pageIterator) LoadNext(slice interface{}) error {
 			break
 		}
 
-		if err != nil {
+		if _, missingField := err.(*datastore.ErrFieldMismatch); !missingField && err != nil {
 			return err
 		}
 

@@ -32,7 +32,7 @@ func (this *itemsIterator) LoadNext(dst interface{}) error {
 	iter := this.query.Run(this.context)
 	key, err := iter.Next(e)
 
-	if err != nil && err != datastore.Done {
+	if _, missingField := err.(*datastore.ErrFieldMismatch); !missingField && err != nil && err != datastore.Done {
 		return err
 	}
 
