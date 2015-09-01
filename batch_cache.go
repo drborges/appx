@@ -3,7 +3,7 @@ package appx
 import (
 	"appengine/memcache"
 	"encoding/json"
-	"github.com/drborges/rivers/rx"
+	"github.com/drborges/rivers/stream"
 )
 
 type MemcacheSaveBatch struct {
@@ -19,7 +19,7 @@ func (batch *MemcacheSaveBatch) Empty() bool {
 	return len(batch.Items) == 0
 }
 
-func (batch *MemcacheSaveBatch) Add(data rx.T) {
+func (batch *MemcacheSaveBatch) Add(data stream.T) {
 	entity := data.(Entity)
 	cacheable := data.(Cacheable)
 	cachedEntity := &CachedEntity{
@@ -38,7 +38,7 @@ func (batch *MemcacheSaveBatch) Add(data rx.T) {
 	})
 }
 
-func (batch *MemcacheSaveBatch) Commit(out rx.OutStream) {
+func (batch *MemcacheSaveBatch) Commit(out stream.Writable) {
 	out <- &MemcacheSaveBatch{
 		Size:  batch.Size,
 		Items: batch.Items,
@@ -61,7 +61,7 @@ func (batch *MemcacheLoadBatch) Empty() bool {
 	return len(batch.Keys) == 0
 }
 
-func (batch *MemcacheLoadBatch) Add(data rx.T) {
+func (batch *MemcacheLoadBatch) Add(data stream.T) {
 	entity := data.(Entity)
 	cacheable := data.(Cacheable)
 
@@ -75,7 +75,7 @@ func (batch *MemcacheLoadBatch) Add(data rx.T) {
 	}
 }
 
-func (batch *MemcacheLoadBatch) Commit(out rx.OutStream) {
+func (batch *MemcacheLoadBatch) Commit(out stream.Writable) {
 	out <- &MemcacheLoadBatch{
 		Size:  batch.Size,
 		Keys:  batch.Keys,
@@ -99,12 +99,12 @@ func (batch *MemcacheDeleteBatch) Empty() bool {
 	return len(batch.Keys) == 0
 }
 
-func (batch *MemcacheDeleteBatch) Add(data rx.T) {
+func (batch *MemcacheDeleteBatch) Add(data stream.T) {
 	cacheable := data.(Cacheable)
 	batch.Keys = append(batch.Keys, cacheable.CacheID())
 }
 
-func (batch *MemcacheDeleteBatch) Commit(out rx.OutStream) {
+func (batch *MemcacheDeleteBatch) Commit(out stream.Writable) {
 	out <- &MemcacheDeleteBatch{
 		Size: batch.Size,
 		Keys: batch.Keys,

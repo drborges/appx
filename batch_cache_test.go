@@ -2,9 +2,9 @@ package appx_test
 
 import (
 	"github.com/drborges/appx"
-	"github.com/drborges/rivers/rx"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
+	"github.com/drborges/rivers/stream"
 )
 
 func TestBatchCacheSetter(t *testing.T) {
@@ -35,7 +35,7 @@ func TestBatchCacheSetter(t *testing.T) {
 		})
 
 		Convey("When I commit the batch", func() {
-			in, out := rx.NewStream(1)
+			in, out := stream.New(1)
 
 			entity1 := NewUserWithFakeKey(User{
 				Name: "entity1",
@@ -96,7 +96,7 @@ func TestBatchCacheLoader(t *testing.T) {
 		})
 
 		Convey("When I commit the batch", func() {
-			in, out := rx.NewStream(1)
+			in, out := stream.New(1)
 
 			entity1 := NewUserWithFakeKey(User{
 				Name: "entity1",
@@ -157,7 +157,7 @@ func TestBatchCacheDeleter(t *testing.T) {
 		})
 
 		Convey("When I commit the batch", func() {
-			in, out := rx.NewStream(1)
+			in, out := stream.New(1)
 
 			entity1 := NewUserWithFakeKey(User{
 				Name: "entity1",

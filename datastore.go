@@ -25,10 +25,10 @@ func (datastore *Datastore) Load(entities ...Entity) error {
 
 	cacheMisses, cacheMissesToBeCached := cacheableEntities.
 		BatchBy(step.MemcacheLoadBatchOf(1000)).
-		ProcessWith(step.LoadBatchFromCache(datastore.context)).
+		OnData(step.LoadBatchFromCache(datastore.context)).
 		Split()
 
-	entitiesWithKeys, entitiesMissingKeys := pipeline.Combine(
+	entitiesWithKeys, entitiesMissingKeys := pipeline.Merge(
 		nonCacheableEntities.Sink(),
 		cacheMisses.Sink()).
 		Partition(step.ResolvedKeys)
@@ -40,7 +40,7 @@ func (datastore *Datastore) Load(entities ...Entity) error {
 	notQueriedEntities := entitiesMissingKeys.
 		Each(step.QueryEntityFromDatastore(datastore.context))
 
-	pipeline.Combine(
+	pipeline.Merge(
 		notLoadedEntities.Sink(),
 		notQueriedEntities.Sink()).Drain()
 
@@ -69,7 +69,7 @@ func (datastore *Datastore) Save(entities ...Entity) error {
 		BatchBy(step.DatastoreBatchOf(500)).
 		Each(step.SaveDatastoreBatch(datastore.context))
 
-	return pipeline.Combine(
+	return pipeline.Merge(
 		cacheStream.Sink(),
 		datastoreStream.Sink()).Drain()
 }
@@ -92,7 +92,7 @@ func (datastore *Datastore) Delete(entities ...Entity) error {
 		BatchBy(step.DatastoreBatchOf(500)).
 		Each(step.DeleteBatchFromDatastore(datastore.context))
 
-	return pipeline.Combine(
+	return pipeline.Merge(
 		cacheStream.Sink(),
 		datastoreStream.Sink()).Drain()
 }

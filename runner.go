@@ -4,7 +4,7 @@ import (
 	"appengine"
 	"appengine/datastore"
 	"github.com/drborges/rivers"
-	"github.com/drborges/rivers/rx"
+	"github.com/drborges/rivers/stream"
 	"reflect"
 )
 
@@ -39,10 +39,10 @@ func (runner *runner) PagesIterator() Iterator {
 	return NewPagesIterator(runner.context, runner.query)
 }
 
-func (runner *runner) StreamOf(dst interface{}) *rivers.Stage {
+func (runner *runner) StreamOf(dst interface{}) *rivers.Stream {
 	context := rivers.NewContext()
 	pipeline := rivers.NewWith(context)
-	in, out := rx.NewStream(1000)
+	in, out := stream.New(1000)
 
 	go func() {
 		defer context.Recover()

@@ -5,7 +5,7 @@ import (
 	"appengine/memcache"
 	"github.com/drborges/appx"
 	"github.com/drborges/rivers"
-	"github.com/drborges/rivers/rx"
+	"github.com/drborges/rivers/stream"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 )
@@ -75,13 +75,12 @@ func TestLoadBatchFromCache(t *testing.T) {
 					Items: batchItems,
 				}
 
-				in, out := rx.NewStream(1)
+				in, out := stream.New(1)
 				loadBatchProcessor(batch, out)
 				close(out)
 
-
 				Convey("Then cache misses are sent downstream", func() {
-					So(in.Read(), ShouldResemble, []rx.T{notCachedUser})
+					So(in.Read(), ShouldResemble, []stream.T{notCachedUser})
 
 					Convey("And entities are loaded from cache", func() {
 						So(userFromCache1, ShouldResemble, user1)

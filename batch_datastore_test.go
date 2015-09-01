@@ -2,7 +2,7 @@ package appx_test
 
 import (
 	"github.com/drborges/appx"
-	"github.com/drborges/rivers/rx"
+	"github.com/drborges/rivers/stream"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 )
@@ -35,7 +35,7 @@ func TestBatchDatastore(t *testing.T) {
 		})
 
 		Convey("When I commit the batch", func() {
-			in, out := rx.NewStream(1)
+			in, out := stream.New(1)
 
 			entity1 := NewUserWithFakeKey(User{Name: "entity1"})
 			entity2 := NewUserWithFakeKey(User{Name: "entity2"})
