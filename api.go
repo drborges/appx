@@ -7,7 +7,7 @@ import (
 
 var (
 	ErrMissingEntityKind   = errors.New("Entity Kind cannot be empty")
-	ErrIncompleteKey       = errors.New("Entity has incomplete key")
+	ErrIncompleteKey       = errors.New("Entity has incomplete key. StringID and IntID cannot be set")
 	ErrMissingParentKey    = errors.New("Entity parent key is missing")
 	ErrIncompleteParentKey = errors.New("Entity parent key cannot be incomplete")
 	ErrInvalidEntityType   = errors.New("Invalid entity type. Make sure your model implements appx.Entity")

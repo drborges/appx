@@ -123,6 +123,34 @@ func TestKeyResolver(t *testing.T) {
 			})
 		})
 
+		Convey("When I resolve a key of an entity whose key spec is incomplete an StringID is set", func() {
+			err := manager.Resolve(&User{
+				keySpec: &appx.KeySpec{
+					Kind: "Entity",
+					Incomplete: true,
+					StringID: "string id",
+				},
+			})
+
+			Convey("Then it fails key resolution", func() {
+				So(err, ShouldEqual, appx.ErrIncompleteKey)
+			})
+		})
+
+		Convey("When I resolve a key of an entity whose key spec is incomplete an IntID is set", func() {
+			err := manager.Resolve(&User{
+				keySpec: &appx.KeySpec{
+					Kind: "Entity",
+					Incomplete: true,
+					IntID: 123,
+				},
+			})
+
+			Convey("Then it fails key resolution", func() {
+				So(err, ShouldEqual, appx.ErrIncompleteKey)
+			})
+		})
+
 		Convey("When I resolve a key of an entity whose key spec requires a parent key and it's missing", func() {
 			err := manager.Resolve(&User{
 				keySpec: &appx.KeySpec{

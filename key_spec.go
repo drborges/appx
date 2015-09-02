@@ -17,6 +17,10 @@ func (spec *KeySpec) Validate(e Entity) error {
 		return ErrIncompleteKey
 	}
 
+	if spec.Incomplete && (spec.StringID != "" || spec.IntID != 0) {
+		return ErrIncompleteKey
+	}
+
 	if spec.HasParent && e.ParentKey() == nil {
 		return ErrMissingParentKey
 	}
