@@ -4,6 +4,7 @@ import (
 	"appengine"
 	"appengine/datastore"
 	"github.com/drborges/rivers"
+	"github.com/drborges/rivers/producers"
 	"github.com/drborges/rivers/stream"
 	"reflect"
 )
@@ -40,28 +41,17 @@ func (runner *runner) PagesIterator() Iterator {
 }
 
 func (runner *runner) StreamOf(dst interface{}) *rivers.Stream {
-	context := rivers.NewContext()
-	pipeline := rivers.NewWith(context)
-	in, out := stream.New(1000)
-
-	go func() {
-		defer context.Recover()
-		defer close(out)
-
-		iter := runner.ItemsIterator()
-		for iter.HasNext() {
-			select {
-			case <-context.Closed():
-				return
-			default:
+	return rivers.From(&producers.Observable{
+		Capacity: 2000,
+		Emit: func(emitter stream.Emitter) {
+			iter := runner.ItemsIterator()
+			for iter.HasNext() {
 				data := reflect.New(reflect.TypeOf(dst)).Interface()
 				if err := iter.LoadNext(data); err != nil {
 					return
 				}
-				out <- data
+				emitter.Emit(data)
 			}
-		}
-	}()
-
-	return pipeline.FromStream(in)
+		},
+	})
 }

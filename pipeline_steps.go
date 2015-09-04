@@ -113,7 +113,7 @@ func (builder *stepsBuilder) DeleteBatchFromDatastore(context appengine.Context)
 }
 
 func (builder *stepsBuilder) LoadBatchFromCache(context appengine.Context) stream.OnDataFn {
-	return func(data stream.T, out stream.Writable) {
+	return func(data stream.T, emitter stream.Emitter) {
 		batch := data.(*MemcacheLoadBatch)
 		items, err := memcache.GetMulti(context, batch.Keys)
 
@@ -134,7 +134,7 @@ func (builder *stepsBuilder) LoadBatchFromCache(context appengine.Context) strea
 		// downstream to be handled by the next transformer
 		if !batch.Empty() {
 			for _, item := range batch.Items {
-				out <- item.Entity
+				emitter.Emit(item.Entity)
 			}
 		}
 	}

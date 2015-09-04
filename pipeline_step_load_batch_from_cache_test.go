@@ -76,7 +76,7 @@ func TestLoadBatchFromCache(t *testing.T) {
 				}
 
 				in, out := stream.New(1)
-				loadBatchProcessor(batch, out)
+				loadBatchProcessor(batch, stream.NewEmitter(rivers.NewContext(), out))
 				close(out)
 
 				Convey("Then cache misses are sent downstream", func() {

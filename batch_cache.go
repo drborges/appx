@@ -38,11 +38,11 @@ func (batch *MemcacheSaveBatch) Add(data stream.T) {
 	})
 }
 
-func (batch *MemcacheSaveBatch) Commit(out stream.Writable) {
-	out <- &MemcacheSaveBatch{
+func (batch *MemcacheSaveBatch) Commit(emitter stream.Emitter) {
+	emitter.Emit(&MemcacheSaveBatch{
 		Size:  batch.Size,
 		Items: batch.Items,
-	}
+	})
 
 	batch.Items = []*memcache.Item{}
 }
@@ -75,12 +75,12 @@ func (batch *MemcacheLoadBatch) Add(data stream.T) {
 	}
 }
 
-func (batch *MemcacheLoadBatch) Commit(out stream.Writable) {
-	out <- &MemcacheLoadBatch{
+func (batch *MemcacheLoadBatch) Commit(emitter stream.Emitter) {
+	emitter.Emit(&MemcacheLoadBatch{
 		Size:  batch.Size,
 		Keys:  batch.Keys,
 		Items: batch.Items,
-	}
+	})
 
 	batch.Keys = []string{}
 	batch.Items = make(map[string]*CachedEntity)
@@ -104,11 +104,11 @@ func (batch *MemcacheDeleteBatch) Add(data stream.T) {
 	batch.Keys = append(batch.Keys, cacheable.CacheID())
 }
 
-func (batch *MemcacheDeleteBatch) Commit(out stream.Writable) {
-	out <- &MemcacheDeleteBatch{
+func (batch *MemcacheDeleteBatch) Commit(emitter stream.Emitter) {
+	emitter.Emit(&MemcacheDeleteBatch{
 		Size: batch.Size,
 		Keys: batch.Keys,
-	}
+	})
 
 	batch.Keys = []string{}
 }

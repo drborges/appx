@@ -15,11 +15,10 @@ func NewDatastore(context appengine.Context) *Datastore {
 }
 
 func (datastore *Datastore) Load(entities ...Entity) error {
-	context := rivers.NewContext()
-	step := NewStep(context)
-	pipeline := rivers.NewWith(context)
+	pipeline := rivers.FromSlice(entities)
+	step := NewStep(pipeline.Context)
 
-	cacheableEntities, nonCacheableEntities := pipeline.FromSlice(entities).
+	cacheableEntities, nonCacheableEntities := pipeline.
 		Each(step.ResolveEntityKeySilently(datastore.context)).
 		Partition(step.CacheableEntitiesWithCacheKey)
 
@@ -52,9 +51,8 @@ func (datastore *Datastore) Load(entities ...Entity) error {
 }
 
 func (datastore *Datastore) Save(entities ...Entity) error {
-	context := rivers.NewContext()
-	step := NewStep(context)
-	pipeline := rivers.NewWith(context).FromSlice(entities)
+	pipeline := rivers.FromSlice(entities)
+	step := NewStep(pipeline.Context)
 
 	entitiesToBeCached, entitiesToBeSavedInDatastore := pipeline.
 		Each(step.ResolveEntityKey(datastore.context)).
@@ -75,9 +73,8 @@ func (datastore *Datastore) Save(entities ...Entity) error {
 }
 
 func (datastore *Datastore) Delete(entities ...Entity) error {
-	context := rivers.NewContext()
-	step := NewStep(context)
-	pipeline := rivers.NewWith(context).FromSlice(entities)
+	pipeline := rivers.FromSlice(entities)
+	step := NewStep(pipeline.Context)
 
 	deleteFromCache, deleteFromDatastore := pipeline.
 		Each(step.ResolveEntityKey(datastore.context)).

@@ -5,6 +5,7 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 	"github.com/drborges/rivers/stream"
+	"github.com/drborges/rivers"
 )
 
 func TestBatchCacheSetter(t *testing.T) {
@@ -49,7 +50,7 @@ func TestBatchCacheSetter(t *testing.T) {
 
 			batch.Add(entity1)
 			batch.Add(entity2)
-			batch.Commit(out)
+			batch.Commit(stream.NewEmitter(rivers.NewContext(), out))
 			close(out)
 
 			Convey("Then a copy of the batch is sent to the output stream", func() {
@@ -110,7 +111,7 @@ func TestBatchCacheLoader(t *testing.T) {
 
 			batch.Add(entity1)
 			batch.Add(entity2)
-			batch.Commit(out)
+			batch.Commit(stream.NewEmitter(rivers.NewContext(), out))
 			close(out)
 
 			Convey("Then a copy of the batch is sent to the output stream", func() {
@@ -171,7 +172,7 @@ func TestBatchCacheDeleter(t *testing.T) {
 
 			batch.Add(entity1)
 			batch.Add(entity2)
-			batch.Commit(out)
+			batch.Commit(stream.NewEmitter(rivers.NewContext(), out))
 			close(out)
 
 			Convey("Then a copy of the batch is sent to the output stream", func() {

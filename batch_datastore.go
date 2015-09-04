@@ -25,12 +25,12 @@ func (batch *DatastoreBatch) Add(data stream.T) {
 	batch.Items = append(batch.Items, entity)
 }
 
-func (batch *DatastoreBatch) Commit(out stream.Writable) {
-	out <- &DatastoreBatch{
+func (batch *DatastoreBatch) Commit(emitter stream.Emitter) {
+	emitter.Emit(&DatastoreBatch{
 		Size:  batch.Size,
 		Keys:  batch.Keys,
 		Items: batch.Items,
-	}
+	})
 
 	batch.Items = []Entity{}
 	batch.Keys = []*datastore.Key{}
