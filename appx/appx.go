@@ -3,8 +3,8 @@ package main
 import (
 	"github.com/codegangsta/cli"
 	"github.com/drborges/appx/appx/commands"
-	"os"
 	"log"
+	"os"
 )
 
 func main() {

@@ -4,9 +4,9 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
+	"log"
 	"os"
 	"strings"
-	"log"
 )
 
 func Parse(path string) []*ast.File {

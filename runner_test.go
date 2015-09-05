@@ -4,9 +4,9 @@ import (
 	"appengine/aetest"
 	"appengine/datastore"
 	"github.com/drborges/appx"
+	"github.com/drborges/rivers/stream"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
-	"github.com/drborges/rivers/stream"
 )
 
 func TestQuery(t *testing.T) {
@@ -71,10 +71,10 @@ func TestQuery(t *testing.T) {
 		})
 
 		Convey("When I stream the data", func() {
-			s := runner.StreamOf(Tag{}).Sink()
+			s := runner.StreamOf(Tag{}).Stream
 
 			Convey("Then the entities are streammed", func() {
-				So(s.Read(), ShouldResemble, []stream.T{golang, swift})
+				So(s.ReadAll(), ShouldResemble, []stream.T{golang, swift})
 			})
 		})
 	})

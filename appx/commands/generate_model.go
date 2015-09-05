@@ -4,8 +4,8 @@ import (
 	"github.com/codegangsta/cli"
 	"github.com/drborges/appx/appx/appxcli"
 	"log"
-	"strings"
 	"os"
+	"strings"
 )
 
 //

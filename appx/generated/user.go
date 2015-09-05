@@ -3,34 +3,25 @@
 package generated
 
 import (
-	
 	"github.com/drborges/appx"
 )
 
 type User struct {
 	appx.Model
-	
+
 	Age int
-	
+
 	Email string
-	
+
 	Name string
-	
+
 	Token string
-	
 }
 
 func (user *User) KeySpec() *appx.KeySpec {
 	return &appx.KeySpec{
 		Kind: "users",
-		
+
 		Incomplete: true,
-		
-		
-		
-		
 	}
 }
-
-
-

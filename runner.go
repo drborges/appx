@@ -40,7 +40,7 @@ func (runner *runner) PagesIterator() Iterator {
 	return NewPagesIterator(runner.context, runner.query)
 }
 
-func (runner *runner) StreamOf(dst interface{}) *rivers.Stream {
+func (runner *runner) StreamOf(dst interface{}) *rivers.Pipeline {
 	return rivers.From(&producers.Observable{
 		Capacity: 2000,
 		Emit: func(emitter stream.Emitter) {

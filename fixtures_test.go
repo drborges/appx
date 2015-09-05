@@ -1,10 +1,10 @@
 package appx_test
 
 import (
-	"github.com/drborges/appx"
-	"encoding/json"
 	"appengine"
 	"appengine/datastore"
+	"encoding/json"
+	"github.com/drborges/appx"
 	"time"
 )
 

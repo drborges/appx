@@ -2,10 +2,10 @@ package appx_test
 
 import (
 	"github.com/drborges/appx"
+	"github.com/drborges/rivers"
 	"github.com/drborges/rivers/stream"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
-"github.com/drborges/rivers"
 )
 
 func TestBatchDatastore(t *testing.T) {

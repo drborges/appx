@@ -126,9 +126,9 @@ func TestKeyResolver(t *testing.T) {
 		Convey("When I resolve a key of an entity whose key spec is incomplete an StringID is set", func() {
 			err := manager.Resolve(&User{
 				keySpec: &appx.KeySpec{
-					Kind: "Entity",
+					Kind:       "Entity",
 					Incomplete: true,
-					StringID: "string id",
+					StringID:   "string id",
 				},
 			})
 
@@ -140,9 +140,9 @@ func TestKeyResolver(t *testing.T) {
 		Convey("When I resolve a key of an entity whose key spec is incomplete an IntID is set", func() {
 			err := manager.Resolve(&User{
 				keySpec: &appx.KeySpec{
-					Kind: "Entity",
+					Kind:       "Entity",
 					Incomplete: true,
-					IntID: 123,
+					IntID:      123,
 				},
 			})
 

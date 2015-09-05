@@ -80,7 +80,7 @@ func TestLoadBatchFromCache(t *testing.T) {
 				close(out)
 
 				Convey("Then cache misses are sent downstream", func() {
-					So(in.Read(), ShouldResemble, []stream.T{notCachedUser})
+					So(in.ReadAll(), ShouldResemble, []stream.T{notCachedUser})
 
 					Convey("And entities are loaded from cache", func() {
 						So(userFromCache1, ShouldResemble, user1)
