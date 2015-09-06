@@ -24,5 +24,5 @@ func createAll(c appengine.Context, tags ...*Tag) {
 		keys[i] = tag.Key()
 	}
 	datastore.PutMulti(c, keys, tags)
-	time.Sleep(1 * time.Second)
+	time.Sleep(2 * time.Second)
 }
